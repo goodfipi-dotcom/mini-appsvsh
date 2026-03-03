@@ -133,14 +133,12 @@
             });
             document.getElementById(id).classList.remove('hidden');
 
-            // Смена фона в зависимости от страницы
             if (id === 'customer') {
                 document.body.className = 'bg-customer';
             } else {
                 document.body.className = 'bg-main';
             }
             
-            // Сброс формы если вернулись назад
             if (id === 'customer') {
                 document.getElementById('order-form').classList.remove('hidden');
                 document.getElementById('order-success').classList.add('hidden');
@@ -152,10 +150,13 @@
             else tg.showAlert("❌ Ошибка");
         }
 
-        // --- ВОТ ЭТУ ФУНКЦИЮ МЫ ПОЛНОСТЬЮ ОБНОВИЛИ ---
         async function sendOrder() {
+            // Получаем данные пользователя Telegram для обратной связи
+            const user = tg.initDataUnsafe?.user;
+            
             const data = {
                 type: 'new_order_vsh',
+                user_id: user ? user.id : null, // Теперь передаем ID заказчика!
                 name: document.getElementById('cust-name').value,
                 address: document.getElementById('address').value,
                 task: document.getElementById('task').value,
@@ -166,12 +167,10 @@
                 return tg.showAlert("Заполните адрес, телефон и задачу!");
             }
 
-            // Переключаем на экран успеха ВНУТРИ приложения ДО отправки запроса
             document.getElementById('order-form').classList.add('hidden');
             document.getElementById('order-success').classList.remove('hidden');
 
             try {
-                // Отправляем данные на твой Railway сервер
                 await fetch('https://mini-appsvsh-production.up.railway.app/api/order', {
                     method: 'POST',
                     headers: {
@@ -181,7 +180,6 @@
                 });
             } catch (error) {
                 console.error("Ошибка при отправке:", error);
-                // Если сервер не ответил, предупреждаем
                 tg.showAlert("Произошла ошибка при отправке заявки. Проверьте соединение.");
             }
         }
