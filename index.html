@@ -11,6 +11,7 @@
             --main-bg: #0f172a;
             --glass-bg: rgba(15, 23, 42, 0.85);
             --text-color: #f8fafc;
+            --overlay: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.9));
         }
 
         body { 
@@ -21,17 +22,19 @@
             background-attachment: fixed;
             color: var(--text-color); 
             margin: 0; padding: 0; min-height: 100vh;
-            transition: background 0.5s ease-in-out;
+            transition: background 0.8s ease-in-out, background-image 0.8s ease-in-out;
         }
 
+        /* GTA V Vibes — ночной/закатный город, насыщенные цвета, контраст */
         .bg-main {
-            background-image: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), 
-                              url('https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=2070&auto=format&fit=crop');
+            background-image: var(--overlay),
+                              url('https://images.unsplash.com/photo-1514565131-fce0801e5785?q=80&w=2070&auto=format&fit=crop');
         }
 
+        /* Worker Style — рабочие/грузчики, суровая атмосфера */
         .bg-customer {
-            background-image: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
-                              url('https://img.freepik.com/free-photo/group-of-professional-industrial-workers-in-safety-uniform-standing-in-front-of-factory_342744-1560.jpg?w=1380');
+            background-image: var(--overlay),
+                              url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=2070&auto=format&fit=crop');
         }
 
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
@@ -44,7 +47,21 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); 
         }
 
-        h1 { color: var(--neon-blue); text-align: center; text-transform: uppercase; letter-spacing: 2px; margin: 0; font-size: 24px; }
+        /* Массивные заголовки в стиле игровых интерфейсов */
+        h1 { 
+            color: var(--neon-blue); 
+            text-align: center; 
+            text-transform: uppercase; 
+            letter-spacing: 3px; 
+            margin: 0; 
+            font-size: 28px; 
+            font-weight: 800;
+            text-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        }
+        h2 {
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
 
         .btn { 
             display: flex; align-items: center; justify-content: center; 
