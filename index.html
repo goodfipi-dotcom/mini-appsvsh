@@ -70,7 +70,6 @@
         .hidden { display: none !important; }
         .back-link { color: var(--accent); cursor: pointer; display: block; margin-bottom: 15px; font-size: 14px; font-weight: bold; }
 
-        /* Стили кабинета */
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab { flex: 1; text-align: center; padding: 10px; border-bottom: 2px solid transparent; cursor: pointer; opacity: 0.6; }
         .tab.active { border-color: var(--accent); opacity: 1; font-weight: bold; }
@@ -215,34 +214,48 @@
             if (tab === 'orders') loadOrders();
         }
 
+        // --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ЛОГИНА ---
         async function loginWorker() {
             const pass = document.getElementById('worker-pass').value;
             const btn = document.getElementById('btn-login');
+            
+            // Берем данные напрямую из WebApp
+            const userId = tg?.initDataUnsafe?.user?.id;
+            const userName = tg?.initDataUnsafe?.user?.first_name || "Новый боец";
+
+            if (!pass) return tg?.showAlert("Введите ПИН-код");
+            
             btn.disabled = true;
             
             try {
                 const res = await fetch(API_BASE + '/api/worker-auth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: pass })
+                    body: JSON.stringify({ 
+                        password: pass, 
+                        telegram_id: userId, 
+                        first_name: userName 
+                    })
                 });
+                
                 const data = await res.json();
+                
                 if (data.ok) {
                     currentWorker = data.worker;
                     updateWorkerUI();
                     showPage('worker-cabinet');
                     loadOrders();
                 } else {
-                    tg?.showAlert("❌ Неверный ПИН-код");
+                    tg?.showAlert(data.error || "❌ Неверный код доступа");
                 }
             } catch (e) {
-                tg?.showAlert("Ошибка связи");
+                tg?.showAlert("Ошибка связи с сервером");
             } finally { btn.disabled = false; }
         }
 
         function updateWorkerUI() {
             document.getElementById('worker-name').textContent = currentWorker.name;
-            document.getElementById('worker-phone').textContent = currentWorker.phone;
+            document.getElementById('worker-phone').textContent = currentWorker.phone || 'Не указан';
             document.getElementById('stat-hours').textContent = currentWorker.total_hours;
             document.getElementById('stat-money').textContent = currentWorker.total_earnings + '₽';
             document.getElementById('stat-rating').textContent = currentWorker.rating;
@@ -258,7 +271,7 @@
                 const res = await fetch(API_BASE + '/api/order?status=published');
                 const data = await res.json();
                 
-                if (data.length === 0) {
+                if (!data || data.length === 0) {
                     list.innerHTML = '<p style="text-align:center; opacity: 0.5; margin-top:20px;">Пока нет доступных заказов</p>';
                     return;
                 }
@@ -270,7 +283,7 @@
                     div.innerHTML = `
                         <div style="font-weight:bold; margin-bottom:5px;">🔧 ${order.service}</div>
                         <div style="font-size:14px; opacity:0.8; margin-bottom:10px;">💰 Ставка: ${order.worker_price}₽/час</div>
-                        <button class="btn btn-accent" style="padding:10px; margin:0;" onclick="openAcceptModal(${JSON.stringify(order).replace(/"/g, '&quot;')})">ПРИНЯТЬ</button>
+                        <button class="btn btn-accent" style="padding:10px; margin:0;" onclick='openAcceptModal(${JSON.stringify(order)})'>ПРИНЯТЬ</button>
                     `;
                     list.appendChild(div);
                 });
@@ -330,7 +343,6 @@
             }
         }
 
-        // --- Стандартная функция заказа (из старого кода) ---
         async function sendOrder() {
             const data = {
                 name: document.getElementById('cust-name').value.trim(),
