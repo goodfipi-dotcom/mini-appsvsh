@@ -12,51 +12,35 @@
             --glass-bg: rgba(15, 23, 42, 0.72);
             --text-color: #e5e7eb;
             --overlay: linear-gradient(rgba(2, 6, 23, 0.78), rgba(2, 6, 23, 0.9));
-            --success: #10b981;
-            --danger: #f87171;
         }
 
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; 
             background-color: var(--main-bg);
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: var(--text-color); 
-            margin: 0; padding: 0; min-height: 100vh;
-            font-weight: 500;
-            font-size: 16px;
-            -webkit-font-smoothing: antialiased;
+            background-image: var(--overlay), url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover; background-position: center; background-attachment: fixed;
+            color: var(--text-color); margin: 0; padding: 0; min-height: 100vh;
         }
 
-        .bg-main { background-image: var(--overlay), url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?q=80&w=2070&auto=format&fit=crop'); }
-        .bg-customer { background-image: var(--overlay), url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2084&auto=format&fit=crop'); }
-
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
+        
         .card { 
-            background: var(--glass-bg); 
-            backdrop-filter: blur(20px);
+            background: var(--glass-bg); backdrop-filter: blur(20px);
             border: 1px solid rgba(148, 163, 184, 0.18);
             border-radius: 16px; padding: 20px; margin-bottom: 20px; 
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55); 
         }
 
-        h1, h2 { color: #f1f5f9; text-transform: uppercase; letter-spacing: 1px; margin: 0; text-align: center; }
-        h1 { font-size: 24px; font-weight: 600; }
-        h2 { font-size: 18px; margin-bottom: 15px; }
-
         .btn { 
             display: flex; align-items: center; justify-content: center; 
-            background: rgba(255, 255, 255, 0.05);
-            color: #e5e7eb; border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05); color: #e5e7eb; 
+            border: 1px solid rgba(255, 255, 255, 0.12);
             padding: 16px; margin: 12px 0; border-radius: 14px; 
-            width: 100%; font-weight: 600; font-size: 16px; cursor: pointer; 
-            transition: all 0.15s ease;
+            width: 100%; font-weight: 600; cursor: pointer; transition: 0.15s;
         }
-        .btn:active { transform: scale(0.98); background: rgba(255, 255, 255, 0.12); }
+
         .btn-accent { background: var(--accent); color: #020617; border: none; }
         .btn-outline { background: transparent; border: 1px solid var(--accent); color: var(--accent); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .input { 
             width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; 
@@ -64,342 +48,115 @@
             background: rgba(15, 23, 42, 0.9); color: #e5e7eb; outline: none; box-sizing: border-box;
         }
 
-        .benefit { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 14px; }
-        .benefit-icon { color: var(--accent); }
-
         .hidden { display: none !important; }
-        .back-link { color: var(--accent); cursor: pointer; display: block; margin-bottom: 15px; font-size: 14px; font-weight: bold; }
-
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab { flex: 1; text-align: center; padding: 10px; border-bottom: 2px solid transparent; cursor: pointer; opacity: 0.6; }
-        .tab.active { border-color: var(--accent); opacity: 1; font-weight: bold; }
+        .back-link { color: var(--accent); cursor: pointer; display: block; margin-bottom: 15px; font-weight: bold; }
         
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .stat-item { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; text-align: center; }
-        .stat-val { display: block; font-size: 20px; font-weight: 700; color: var(--accent); }
-        .stat-label { font-size: 12px; opacity: 0.7; }
-
-        .order-card { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
-        .rules-text { font-size: 14px; line-height: 1.5; color: #cbd5e1; }
+        .order-card { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 15px; border-left: 4px solid var(--accent); }
+        .admin-label { color: #f59e0b; font-size: 12px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
     </style>
 </head>
-<body class="bg-main">
+<body>
 
     <div id="main-menu" class="container">
-        <div class="card" style="margin-top: 60px; text-align:center;">
+        <div class="card" style="margin-top: 40px; text-align:center;">
             <h1>VSH SERVICE</h1>
-            <p style="opacity: 0.8; font-size: 14px;">Октябрьский — Сила в кадрах</p>
+            <p style="opacity: 0.8;">Цифровая платформа управления кадрами</p>
         </div>
-        <button class="btn btn-accent" onclick="showPage('customer')">🙋‍♂️ ЗАКАЗАТЬ РАБОЧИХ</button>
-        <button class="btn btn-outline" onclick="showPage('worker-auth')">🛠️ ВХОД ДЛЯ БРИГАД</button>
+
+        <div id="admin-action" class="hidden">
+            <button class="btn btn-accent" onclick="showPage('admin-panel')">📢 ОПУБЛИКОВАТЬ ЗАЯВКУ</button>
+        </div>
+
+        <button class="btn btn-outline" onclick="showPage('orders-view')">📋 СПИСОК ЗАКАЗОВ</button>
+        <button class="btn" onclick="showPage('worker-auth')">🛠️ ВХОД ДЛЯ БРИГАД</button>
     </div>
 
-    <div id="customer" class="hidden container">
-        <span class="back-link" onclick="showPage('main-menu')">← НА ГЛАВНУЮ</span>
+    <div id="admin-panel" class="hidden container">
+        <span class="back-link" onclick="showPage('main-menu')">← НАЗАД</span>
         <div class="card">
-            <h2>Глаза горят, работа кипит</h2>
-            <div class="benefit"><span>🔥</span><span><b>Прощай, Авито:</b> Мы всегда на связи.</span></div>
-            <div class="benefit"><span>⏱️</span><span><b>Скорость:</b> Бригада на месте за 60 мин.</span></div>
+            <div class="admin-label">Панель владельца</div>
+            <h2>Новая заявка</h2>
+            <textarea id="task-input" class="input" rows="5" placeholder="Введите детали заказа..."></textarea>
+            <button class="btn btn-accent" onclick="sendOrder()">ОПУБЛИКОВАТЬ</button>
         </div>
-        <div class="card" id="order-form">
-            <input type="text" id="cust-name" class="input" placeholder="👤 Ваше имя">
-            <input type="text" id="address" class="input" placeholder="📍 Адрес">
-            <input type="text" id="task" class="input" placeholder="🔧 Что нужно сделать?">
-            <input type="tel" id="phone" class="input" placeholder="📞 Номер телефона">
-            <button class="btn btn-accent" id="btn-send-order" onclick="sendOrder()">🚀 ОТПРАВИТЬ ЗАЯВКУ</button>
-        </div>
-        <div id="order-success" class="card hidden" style="text-align: center;">
-            <div style="font-size: 50px;">⏳</div>
-            <h2>Заявка ушла!</h2>
-            <p>Диспетчер свяжется с вами в ближайшее время.</p>
-            <button class="btn" onclick="showPage('main-menu')">ВЕРНУТЬСЯ</button>
-        </div>
+    </div>
+
+    <div id="orders-view" class="hidden container">
+        <span class="back-link" onclick="showPage('main-menu')">← НАЗАД</span>
+        <h2 style="text-align:center;">Актуальные заказы</h2>
+        <div id="list-container">Загрузка...</div>
     </div>
 
     <div id="worker-auth" class="hidden container">
         <span class="back-link" onclick="showPage('main-menu')">← НАЗАД</span>
         <div class="card">
             <h2>Доступ бригад</h2>
-            <p style="text-align:center; opacity: 0.7; font-size: 14px; margin-bottom: 20px;">Введите ваш персональный ПИН-код</p>
-            <input type="password" id="worker-pass" class="input" style="text-align:center; letter-spacing: 5px; font-size: 24px;" placeholder="****">
-            <button class="btn btn-accent" id="btn-login" onclick="loginWorker()">ВОЙТИ В КАБИНЕТ</button>
-        </div>
-    </div>
-
-    <div id="worker-cabinet" class="hidden container">
-        <div class="tabs">
-            <div class="tab active" id="tab-orders-link" onclick="switchTab('orders')">Заказы</div>
-            <div class="tab" id="tab-stats-link" onclick="switchTab('stats')">Статистика</div>
-            <div class="tab" id="tab-profile-link" onclick="switchTab('profile')">Профиль</div>
-        </div>
-
-        <div id="tab-orders">
-            <div id="available-orders-list">
-                <p style="text-align:center; opacity: 0.5;">Поиск новых заказов...</p>
-            </div>
-        </div>
-
-        <div id="tab-stats" class="hidden">
-            <div class="card stat-grid">
-                <div class="stat-item"><span class="stat-val" id="stat-hours">0</span><span class="stat-label">Часов</span></div>
-                <div class="stat-item"><span class="stat-val" id="stat-money">0₽</span><span class="stat-label">Заработано</span></div>
-                <div class="stat-item"><span class="stat-val" id="stat-rating">5.0</span><span class="stat-label">Рейтинг</span></div>
-                <div class="stat-item"><span class="stat-val" id="stat-level">Новичок</span><span class="stat-label">Уровень</span></div>
-            </div>
-        </div>
-
-        <div id="tab-profile" class="hidden">
-            <div class="card">
-                <h2 id="worker-name">Загрузка...</h2>
-                <p id="worker-phone" style="text-align:center; opacity: 0.7;"></p>
-                <div style="margin-top: 20px;">
-                    <label style="font-size: 12px; opacity: 0.6;">Реквизиты для выплат:</label>
-                    <input type="text" id="bank-details" class="input" placeholder="Карта или СБП">
-                    <button class="btn btn-outline" onclick="saveDetails()">СОХРАНИТЬ</button>
-                </div>
-            </div>
-            <button class="btn" onclick="showPage('main-menu')" style="color: var(--danger);">ВЫЙТИ ИЗ СИСТЕМЫ</button>
-        </div>
-    </div>
-
-    <div id="modal-accept" class="hidden container">
-        <span class="back-link" onclick="showPage('worker-cabinet')">← ОТМЕНА</span>
-        
-        <div id="accept-step-1" class="card">
-            <h2>Правила работы</h2>
-            <div class="rules-text">
-                <p>1. Быть на месте за 10 минут до начала.</p>
-                <p>2. Не брать контакты у клиента напрямую.</p>
-                <p>3. Соблюдать дисциплину и трезвость.</p>
-                <p style="color: var(--danger); font-weight: bold;">Нарушение — блокировка и штраф.</p>
-            </div>
-            <label style="display: flex; align-items: center; gap: 10px; margin-top: 20px; cursor: pointer;">
-                <input type="checkbox" id="rule-check"> Я ознакомлен и согласен
-            </label>
-            <button class="btn btn-accent" style="margin-top: 20px;" onclick="acceptStep2()">ПРИНЯТЬ</button>
-        </div>
-
-        <div id="accept-step-2" class="hidden card">
-            <h2>Подтверждение</h2>
-            <div id="order-details-preview" style="margin-bottom: 20px;"></div>
-            <p style="font-size: 14px; opacity: 0.8;">Напишите <b>"подтверждаю"</b> для получения адреса:</p>
-            <input type="text" id="confirm-text" class="input" placeholder="...">
-            <button class="btn btn-accent" onclick="finalConfirm()">ЗАЯВКА ПОДТВЕРЖДЕНА</button>
+            <input type="password" id="worker-pass" class="input" style="text-align:center;" placeholder="Введите ПИН-код">
+            <button class="btn btn-accent" onclick="loginWorker()">ВОЙТИ</button>
         </div>
     </div>
 
     <script>
-        const tg = window.Telegram?.WebApp || null;
-        if (tg) { tg.ready(); tg.expand(); }
-
+        const tg = window.Telegram.WebApp;
         const API_BASE = 'https://mini-appsvsh.vercel.app';
-        let currentWorker = null;
-        let selectedOrder = null;
+        const OWNER_ID = 42902;
 
-        function showPage(id) {
-            ['main-menu', 'customer', 'worker-auth', 'worker-cabinet', 'modal-accept'].forEach(p => {
-                document.getElementById(p).classList.add('hidden');
+        window.onload = () => {
+            tg.expand();
+            // Проверка на владельца
+            const user = tg.initDataUnsafe?.user;
+            if (user && user.id === OWNER_ID) {
+                document.getElementById('admin-action').classList.remove('hidden');
+            }
+        };
+
+        function showPage(pageId) {
+            ['main-menu', 'admin-panel', 'orders-view', 'worker-auth'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
             });
-            document.getElementById(id).classList.remove('hidden');
-            document.body.className = (id === 'customer') ? 'bg-customer' : 'bg-main';
-        }
-
-        function switchTab(tab) {
-            ['orders', 'stats', 'profile'].forEach(t => {
-                document.getElementById('tab-' + t).classList.add('hidden');
-                document.getElementById('tab-' + t + '-link').classList.remove('active');
-            });
-            document.getElementById('tab-' + tab).classList.remove('hidden');
-            document.getElementById('tab-' + tab + '-link').classList.add('active');
-            if (tab === 'orders') loadOrders();
-        }
-
-        // --- УЛЬТИМАТИВНЫЙ ВХОД ---
-        async function loginWorker() {
-            const pass = document.getElementById('worker-pass').value;
-            const btn = document.getElementById('btn-login');
-            
-            if (!pass) return tg?.showAlert("Введите ПИН-код");
-
-            // Если ПИН не 2026, даже не пытаемся стучать на сервер
-            if (pass !== '2026') {
-                return tg?.showAlert("❌ Неверный код доступа");
-            }
-
-            btn.disabled = true;
-
-            // Пробуем достать данные ТГ для красоты, если их нет - ставим заглушки
-            const userId = tg?.initDataUnsafe?.user?.id || Date.now();
-            const userName = tg?.initDataUnsafe?.user?.first_name || "Бригадир";
-
-            try {
-                const res = await fetch(API_BASE + '/api/worker-auth', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        password: pass, 
-                        telegram_id: userId, 
-                        first_name: userName 
-                    })
-                });
-                
-                const data = await res.json();
-                
-                if (data.ok) {
-                    currentWorker = data.worker;
-                    updateWorkerUI();
-                    showPage('worker-cabinet');
-                    loadOrders();
-                } else {
-                    // ПИН правильный, но сервер капризничает? Плевать, пускаем!
-                    forceEnter(userName, userId);
-                }
-            } catch (e) {
-                // Нет интернета или сервер лег? Пускаем!
-                forceEnter(userName, userId);
-            } finally { 
-                btn.disabled = false; 
-            }
-        }
-
-        function forceEnter(name, id) {
-            currentWorker = {
-                id: id,
-                name: name,
-                total_hours: 0,
-                total_earnings: 0,
-                rating: 5.0,
-                level: "Рабочий"
-            };
-            updateWorkerUI();
-            showPage('worker-cabinet');
-            loadOrders();
-        }
-
-        function updateWorkerUI() {
-            document.getElementById('worker-name').textContent = currentWorker.name;
-            document.getElementById('worker-phone').textContent = currentWorker.phone || 'Активен';
-            document.getElementById('stat-hours').textContent = currentWorker.total_hours || 0;
-            document.getElementById('stat-money').textContent = (currentWorker.total_earnings || 0) + '₽';
-            document.getElementById('stat-rating').textContent = currentWorker.rating || '5.0';
-            document.getElementById('stat-level').textContent = currentWorker.level || 'Новичок';
-            document.getElementById('bank-details').value = currentWorker.bank_details || '';
-        }
-
-        async function loadOrders() {
-            const list = document.getElementById('available-orders-list');
-            list.innerHTML = '<p style="text-align:center; opacity: 0.5;">Загрузка...</p>';
-            
-            try {
-                const res = await fetch(API_BASE + '/api/order?status=published');
-                const data = await res.json();
-                
-                if (!data || data.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; opacity: 0.5; margin-top:20px;">Пока нет доступных заказов</p>';
-                    return;
-                }
-
-                list.innerHTML = '';
-                data.forEach(order => {
-                    const div = document.createElement('div');
-                    div.className = 'order-card';
-                    div.innerHTML = `
-                        <div style="font-weight:bold; margin-bottom:5px;">🔧 ${order.service}</div>
-                        <div style="font-size:14px; opacity:0.8; margin-bottom:10px;">💰 Ставка: ${order.worker_price}₽/час</div>
-                        <button class="btn btn-accent" style="padding:10px; margin:0;" onclick='openAcceptModal(${JSON.stringify(order)})'>ПРИНЯТЬ</button>
-                    `;
-                    list.appendChild(div);
-                });
-            } catch (e) {
-                list.innerHTML = '<p style="color:var(--danger); text-align:center;">Ошибка загрузки</p>';
-            }
-        }
-
-        function openAcceptModal(order) {
-            selectedOrder = order;
-            document.getElementById('rule-check').checked = false;
-            document.getElementById('accept-step-1').classList.remove('hidden');
-            document.getElementById('accept-step-2').classList.add('hidden');
-            showPage('modal-accept');
-        }
-
-        function acceptStep2() {
-            if (!document.getElementById('rule-check').checked) {
-                return tg?.showAlert("Нужно согласиться с правилами!");
-            }
-            document.getElementById('accept-step-1').classList.add('hidden');
-            document.getElementById('accept-step-2').classList.remove('hidden');
-            document.getElementById('order-details-preview').innerHTML = `
-                <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:10px;">
-                    <b>Задача:</b> ${selectedOrder.service}<br>
-                    <b>Оплата:</b> ${selectedOrder.worker_price}₽/ч
-                </div>
-            `;
-        }
-
-        async function finalConfirm() {
-            const text = document.getElementById('confirm-text').value.toLowerCase().trim();
-            if (text !== 'подтверждаю') {
-                return tg?.showAlert("Введите слово 'подтверждаю'");
-            }
-
-            try {
-                const res = await fetch(API_BASE + '/api/worker-actions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'accept_order',
-                        order_id: selectedOrder.id,
-                        worker_id: currentWorker.id
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    tg?.showAlert(`✅ Принято! Адрес: ${selectedOrder.address}`);
-                    showPage('worker-cabinet');
-                    loadOrders();
-                } else {
-                    tg?.showAlert("Ошибка: " + data.error);
-                }
-            } catch (e) {
-                tg?.showAlert("Ошибка соединения");
-            }
+            document.getElementById(pageId).classList.remove('hidden');
+            if (pageId === 'orders-view') loadOrders();
         }
 
         async function sendOrder() {
-            const data = {
-                name: document.getElementById('cust-name').value.trim(),
-                address: document.getElementById('address').value.trim(),
-                task: document.getElementById('task').value.trim(),
-                phone: document.getElementById('phone').value.trim()
-            };
-
-            if (!data.address || !data.task || !data.phone) {
-                return tg?.showAlert?.("Заполните адрес, задачу и телефон.");
-            }
-
-            const btn = document.getElementById('btn-send-order');
-            btn.disabled = true;
-            btn.textContent = 'Отправка...';
+            const taskText = document.getElementById('task-input').value;
+            if (!taskText) return alert("Введите текст заявки!");
 
             try {
-                const res = await fetch(API_BASE + '/api/order', {
+                const res = await fetch(`${API_BASE}/api/order`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify({ task: taskText, status: 'published' })
                 });
                 if (res.ok) {
-                    document.getElementById('order-form').classList.add('hidden');
-                    document.getElementById('order-success').classList.remove('hidden');
-                } else {
-                    tg?.showAlert("Ошибка при отправке");
+                    alert("Заявка успешно опубликована!");
+                    document.getElementById('task-input').value = '';
+                    showPage('main-menu');
                 }
-            } catch (error) {
-                tg?.showAlert("Ошибка соединения");
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '🚀 ОТПРАВИТЬ ЗАЯВКУ';
-            }
+            } catch (e) { alert("Ошибка при отправке"); }
+        }
+
+        async function loadOrders() {
+            const container = document.getElementById('list-container');
+            container.innerHTML = "Загрузка...";
+            try {
+                const res = await fetch(`${API_BASE}/api/order?status=published`);
+                const data = await res.json();
+                container.innerHTML = data.length ? '' : 'Заказов пока нет';
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'order-card';
+                    div.innerHTML = `<div style="white-space:pre-wrap;">${item.task}</div>`;
+                    container.appendChild(div);
+                });
+            } catch (e) { container.innerHTML = "Ошибка загрузки данных"; }
+        }
+
+        function loginWorker() {
+            if (document.getElementById('worker-pass').value === '2026') {
+                alert("Успешный вход!");
+                showPage('orders-view');
+            } else { alert("Неверный код"); }
         }
     </script>
 </body>
