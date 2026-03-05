@@ -246,17 +246,31 @@
             btn.textContent = '⏳ Отправка...';
 
             try {
-                tg.sendData(JSON.stringify(data));
+                const res = await fetch(API_BASE + '/api/order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
 
-                document.getElementById('order-form').classList.add('hidden');
-                document.getElementById('order-success').classList.remove('hidden');
+                if (res.ok && result.success) {
+                    document.getElementById('order-form').classList.add('hidden');
+                    document.getElementById('order-success').classList.remove('hidden');
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = '🚀 ОТПРАВИТЬ ЗАЯВКУ';
+                    const msg = result.error || 'Не удалось отправить заявку';
+                    errEl.textContent = msg;
+                    errEl.classList.remove('hidden');
+                    tg.showAlert(msg);
+                }
             } catch (error) {
-                console.error("Ошибка при отправке через tg.sendData:", error);
+                console.error("Ошибка при отправке:", error);
                 btn.disabled = false;
                 btn.textContent = '🚀 ОТПРАВИТЬ ЗАЯВКУ';
-                errEl.textContent = 'Не удалось отправить заявку. Попробуйте ещё раз.';
+                errEl.textContent = 'Проверьте интернет и попробуйте снова.';
                 errEl.classList.remove('hidden');
-                tg.showAlert("Ошибка при отправке заявки.");
+                tg.showAlert("Ошибка соединения. Проверьте интернет.");
             }
         }
     </script>
