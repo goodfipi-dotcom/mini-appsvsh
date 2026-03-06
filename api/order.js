@@ -9,36 +9,35 @@ export default async function handler(req, res) {
   const { service, address, comment, client_price, worker_price, margin, workers_needed } = req.body;
 
   try {
-    // 1. ЗАПИСЬ В БАЗУ
+    // 1. Сохраняем в базу
     const { data: order, error: dbError } = await supabase
       .from('orders')
       .insert([{
         task: service,
-        address: address,
-        comment: comment,
-        client_price: client_price,
-        worker_price: worker_price,
-        margin: margin,
-        workers_needed: workers_needed,
+        address,
+        comment,
+        client_price,
+        worker_price,
+        margin,
+        workers_needed,
         status: 'published'
       }])
       .select().single();
 
     if (dbError) throw dbError;
 
-    // 2. ПОЛУЧАЕМ ВСЕХ РАБОЧИХ ДЛЯ РАССЫЛКИ
+    // 2. Достаем ID всех живых рабочих
     const { data: workers } = await supabase.from('workers').select('id').eq('is_banned', false);
 
-    // 3. РАССЫЛКА ПУШЕЙ В ТЕЛЕГРАМ
+    // 3. Рассылаем уведомление в Telegram
     if (workers && workers.length > 0) {
       const message = `🛠 **НОВЫЙ ЗАКАЗ!**\n\n` +
                       `📝 Задача: ${service}\n` +
                       `📍 Адрес: ${address}\n` +
                       `💰 Оплата: **${worker_price} ₽/час**\n` +
                       `👥 Нужно: ${workers_needed} чел.\n\n` +
-                      `Заходи в приложение, чтобы принять!`;
+                      `Заходи в приложение, чтобы успеть забрать!`;
 
-      // Рассылаем всем одновременно
       await Promise.all(workers.map(w => 
         fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: 'POST',
@@ -48,7 +47,7 @@ export default async function handler(req, res) {
             text: message,
             parse_mode: 'Markdown',
             reply_markup: {
-              inline_keyboard: [[{ text: "🚀 ОТКРЫТЬ ЗАКАЗЫ", url: "https://t.me/ТВОЙ_БОТ_БЕЗ_СОБАЧКИ/app" }]]
+              inline_keyboard: [[{ text: "🚀 ОТКРЫТЬ ПРИЛОЖЕНИЕ", url: "https://t.me/ТВОЙ_ЮЗЕРНЕЙМ_БОТА/app" }]]
             }
           })
         })
