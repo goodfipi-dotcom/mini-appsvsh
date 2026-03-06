@@ -82,12 +82,11 @@
         <button class="btn btn-accent" onclick="showPage('customer')">🙋‍♂️ ЗАКАЗАТЬ РАБОЧИХ</button>
         <button class="btn btn-outline" onclick="showPage('worker-auth')">🛠️ ВХОД ДЛЯ БРИГАД</button>
         
-        <!-- Кнопка только для владельца -->
+        <!-- Кнопка "Создать объявление" — ТОЛЬКО У ТЕБЯ (по telegram_id) -->
         <div id="admin-main-btn" class="hidden">
             <button class="btn btn-outline" onclick="showPage('admin-panel')">👑 СОЗДАТЬ ОБЪЯВЛЕНИЕ</button>
         </div>
     </div>
-
     <div id="customer" class="hidden container">
         <span class="back-link" onclick="showPage('main-menu')">← НА ГЛАВНУЮ</span>
         <div class="card">
@@ -109,7 +108,6 @@
             <button class="btn" onclick="showPage('main-menu')">ВЕРНУТЬСЯ</button>
         </div>
     </div>
-
     <div id="worker-auth" class="hidden container">
         <span class="back-link" onclick="showPage('main-menu')">← НАЗАД</span>
         <div class="card">
@@ -119,7 +117,6 @@
             <button class="btn btn-accent" id="btn-login" onclick="loginWorker()">ВОЙТИ В КАБИНЕТ</button>
         </div>
     </div>
-
     <div id="worker-cabinet" class="hidden container">
         <div class="tabs">
             <div class="tab active" id="tab-orders-link" onclick="switchTab('orders')">Заказы</div>
@@ -152,7 +149,6 @@
             <button class="btn" onclick="showPage('main-menu')" style="color: var(--danger);">ВЫЙТИ ИЗ СИСТЕМЫ</button>
         </div>
     </div>
-
     <div id="modal-accept" class="hidden container">
         <span class="back-link" onclick="showPage('worker-cabinet')">← ОТМЕНА</span>
        
@@ -178,7 +174,7 @@
         </div>
     </div>
 
-    <!-- ====================== ПАНЕЛЬ АДМИНИСТРАТОРА ====================== -->
+    <!-- ==================== ПАНЕЛЬ ВЛАДЕЛЬЦА (только у тебя) ==================== -->
     <div id="admin-panel" class="hidden container">
         <span class="back-link" onclick="showPage('main-menu')">← НА ГЛАВНУЮ</span>
         <div class="card">
@@ -195,7 +191,7 @@
         <div id="admin-success" class="card hidden" style="text-align:center;">
             <div style="font-size:60px;">✅</div>
             <h2>Заказ опубликован!</h2>
-            <p>Рабочие уже получают уведомление в Telegram.</p>
+            <p>Рабочие уже видят его в приложении и получают уведомление в боте.</p>
             <button class="btn" onclick="showPage('main-menu')">НА ГЛАВНУЮ</button>
         </div>
     </div>
@@ -203,45 +199,30 @@
     <script>
         const tg = window.Telegram?.WebApp || null;
         if (tg) { tg.ready(); tg.expand(); }
-
         const API_BASE = 'https://mini-appsvsh.vercel.app';
         const ADMIN_TG_ID = 7693616720;
-        const ADMIN_PASSWORD = "admin777";
 
         let currentWorker = null;
         let selectedOrder = null;
 
-        // ====================== ОПРЕДЕЛЕНИЕ АДМИНА ======================
+        // ==================== ТОЛЬКО У ТЕБЯ (строгая проверка по ID) ====================
         function checkAdmin() {
             const userId = tg?.initDataUnsafe?.user?.id;
             if (userId === ADMIN_TG_ID) {
-                document.getElementById('admin-main-btn').classList.remove('hidden');
-                return;
-            }
-            // Запасной пароль (работает даже если Telegram не отдал ID)
-            if (!localStorage.getItem('admin_access')) {
-                const entered = prompt("Введите пароль диспетчера:");
-                if (entered === ADMIN_PASSWORD) {
-                    localStorage.setItem('admin_access', 'true');
-                    document.getElementById('admin-main-btn').classList.remove('hidden');
-                }
-            } else {
                 document.getElementById('admin-main-btn').classList.remove('hidden');
             }
         }
         checkAdmin();
 
-        // ====================== ТВОЙ ОРИГИНАЛЬНЫЙ КОД (без изменений) ======================
         function showPage(id) {
             ['main-menu', 'customer', 'worker-auth', 'worker-cabinet', 'modal-accept', 'admin-panel'].forEach(p => {
-                const el = document.getElementById(p);
-                if (el) el.classList.add('hidden');
+                document.getElementById(p).classList.add('hidden');
             });
-            const page = document.getElementById(id);
-            if (page) page.classList.remove('hidden');
+            document.getElementById(id).classList.remove('hidden');
             document.body.className = (id === 'customer') ? 'bg-customer' : 'bg-main';
         }
 
+        // === ВЕСЬ ТВОЙ ОРИГИНАЛЬНЫЙ КОД (ничего не изменил) ===
         function switchTab(tab) {
             ['orders', 'stats', 'profile'].forEach(t => {
                 document.getElementById('tab-' + t).classList.add('hidden');
@@ -426,7 +407,7 @@
             }
         }
 
-        // ====================== НОВАЯ ФУНКЦИЯ ДЛЯ АДМИНА ======================
+        // ==================== НОВАЯ ФУНКЦИЯ ДЛЯ ВЛАДЕЛЬЦА ====================
         async function publishAdminOrder() {
             const task = document.getElementById('admin-task').value.trim();
             const price = parseInt(document.getElementById('admin-price').value) || 0;
@@ -438,12 +419,12 @@
             }
 
             const data = {
-                task: task,
-                price: price,
+                service: task,           // чтобы сразу показывалось в loadOrders
+                worker_price: price,
                 address: address,
-                comment: comment,
-                source: 'admin',
-                status: 'published'
+                comment: comment || "",
+                source: "admin",
+                status: "published"      // сразу публикуем
             };
 
             try {
@@ -454,15 +435,17 @@
                 });
                 if (res.ok) {
                     document.getElementById('admin-success').classList.remove('hidden');
+                    // Обновляем список у рабочих автоматически (если они онлайн)
+                    if (typeof loadOrders === 'function') loadOrders();
                 } else {
-                    tg?.showAlert("Ошибка сервера");
+                    tg?.showAlert("Ошибка сервера. Проверь backend (/api/order)");
                 }
             } catch (e) {
                 tg?.showAlert("Нет соединения");
             }
         }
 
-        console.log("✅ Полный код с админ-панелью загружен. Кнопка должна появиться.");
+        console.log("✅ Кнопка админа добавлена. Видна только у telegram_id = 7693616720");
     </script>
 </body>
 </html>
