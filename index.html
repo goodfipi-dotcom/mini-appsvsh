@@ -58,7 +58,6 @@
             background: rgba(15, 23, 42, 0.9); color: #e5e7eb; outline: none; box-sizing: border-box;
         }
         .benefit { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 14px; }
-        .benefit-icon { color: var(--accent); }
         .hidden { display: none !important; }
         .back-link { color: var(--accent); cursor: pointer; display: block; margin-bottom: 15px; font-size: 14px; font-weight: bold; }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
@@ -71,9 +70,25 @@
         .stat-label { font-size: 12px; opacity: 0.7; }
         .order-card { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 4px solid var(--accent); }
         .rules-text { font-size: 14px; line-height: 1.5; color: #cbd5e1; }
+
+        /* Стили для маржи */
+        .margin-btn {
+            padding: 12px 20px;
+            margin: 5px;
+            border-radius: 10px;
+            border: 2px solid var(--accent);
+            background: transparent;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .margin-btn.active {
+            background: var(--accent);
+            color: #020617;
+        }
     </style>
 </head>
 <body class="bg-main">
+
     <div id="main-menu" class="container">
         <div class="card" style="margin-top: 60px; text-align:center;">
             <h1>VSH SERVICE</h1>
@@ -84,9 +99,10 @@
        
         <!-- Кнопка только для владельца -->
         <div id="admin-main-btn" class="hidden">
-            <button class="btn btn-outline" onclick="showPage('admin-panel')">👑 СОЗДАТЬ ОБЪЯВЛЕНИЕ</button>
+            <button class="btn btn-outline" onclick="showPage('admin-panel')">👑 АДМИН ПАНЕЛЬ</button>
         </div>
     </div>
+
     <div id="customer" class="hidden container">
         <span class="back-link" onclick="showPage('main-menu')">← НА ГЛАВНУЮ</span>
         <div class="card">
@@ -108,6 +124,7 @@
             <button class="btn" onclick="showPage('main-menu')">ВЕРНУТЬСЯ</button>
         </div>
     </div>
+
     <div id="worker-auth" class="hidden container">
         <span class="back-link" onclick="showPage('main-menu')">← НАЗАД</span>
         <div class="card">
@@ -117,6 +134,7 @@
             <button class="btn btn-accent" id="btn-login" onclick="loginWorker()">ВОЙТИ В КАБИНЕТ</button>
         </div>
     </div>
+
     <div id="worker-cabinet" class="hidden container">
         <div class="tabs">
             <div class="tab active" id="tab-orders-link" onclick="switchTab('orders')">Заказы</div>
@@ -149,6 +167,7 @@
             <button class="btn" onclick="showPage('main-menu')" style="color: var(--danger);">ВЫЙТИ ИЗ СИСТЕМЫ</button>
         </div>
     </div>
+
     <div id="modal-accept" class="hidden container">
         <span class="back-link" onclick="showPage('worker-cabinet')">← ОТМЕНА</span>
        
@@ -174,7 +193,7 @@
         </div>
     </div>
 
-    <!-- ====================== ПАНЕЛЬ АДМИНИСТРАТОРА ====================== -->
+    <!-- ====================== АДМИН ПАНЕЛЬ ====================== -->
     <div id="admin-panel" class="hidden container">
         <span class="back-link" onclick="showPage('main-menu')">← НА ГЛАВНУЮ</span>
         <div class="card">
@@ -182,16 +201,25 @@
             <p style="opacity:0.7; text-align:center; margin-bottom:20px;">Только для владельца</p>
            
             <input type="text" id="admin-task" class="input" placeholder="Что нужно сделать? (задача)">
-            <input type="number" id="admin-price" class="input" placeholder="Ставка рабочему, ₽/час" min="500">
             <input type="text" id="admin-address" class="input" placeholder="Полный адрес">
             <textarea id="admin-comment" class="input" style="height:80px;" placeholder="Дополнительно (время, условия)"></textarea>
-           
+            
+            <input type="number" id="admin-client-price" class="input" placeholder="Ставка для клиента, ₽" min="500">
+            
+            <div style="margin:15px 0; text-align:center;">
+                <p style="opacity:0.7; font-size:14px; margin-bottom:8px;">Маржа:</p>
+                <button class="margin-btn active" data-margin="150" onclick="selectMargin(this)">150 ₽</button>
+                <button class="margin-btn" data-margin="200" onclick="selectMargin(this)">200 ₽</button>
+            </div>
+            
+            <input type="number" id="admin-workers-needed" class="input" placeholder="Сколько нужно рабочих" min="1" value="1">
+            
             <button class="btn btn-accent" onclick="publishAdminOrder()">ОПУБЛИКОВАТЬ ЗАКАЗ</button>
         </div>
         <div id="admin-success" class="card hidden" style="text-align:center;">
             <div style="font-size:60px;">✅</div>
             <h2>Заказ опубликован!</h2>
-            <p>Рабочие уже видят его в приложении и получают уведомление в боте.</p>
+            <p>Рабочие уже видят его и получают уведомление.</p>
             <button class="btn" onclick="showPage('main-menu')">НА ГЛАВНУЮ</button>
         </div>
     </div>
@@ -205,6 +233,7 @@
 
         let currentWorker = null;
         let selectedOrder = null;
+        let selectedMargin = 150;
 
         // ====================== ОПРЕДЕЛЕНИЕ АДМИНА ======================
         function checkAdmin() {
@@ -225,7 +254,12 @@
         }
         checkAdmin();
 
-        // ====================== ТВОЙ ОРИГИНАЛЬНЫЙ КОД ======================
+        function selectMargin(btn) {
+            document.querySelectorAll('.margin-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedMargin = parseInt(btn.dataset.margin);
+        }
+
         function showPage(id) {
             ['main-menu', 'customer', 'worker-auth', 'worker-cabinet', 'modal-accept', 'admin-panel'].forEach(p => {
                 document.getElementById(p).classList.add('hidden');
@@ -244,6 +278,7 @@
             if (tab === 'orders') loadOrders();
         }
 
+        // ====================== ВСЕ ТВОИ ОРИГИНАЛЬНЫЕ ФУНКЦИИ ======================
         async function loginWorker() {
             const pass = document.getElementById('worker-pass').value;
             const btn = document.getElementById('btn-login');
@@ -316,7 +351,7 @@
                 const data = await res.json();
                
                 if (!data || data.length === 0) {
-                    list.innerHTML = '<p style="text-align:center; opacity: 0.5; margin-top:20px;">Пока нет доступных заказов</p>';
+                    list.innerHTML = '<p style="text-align:center; opacity: 0.6; margin-top:40px;">Пока заказов нет.<br>Отдыхайте ☕</p>';
                     return;
                 }
                 list.innerHTML = '';
@@ -418,24 +453,28 @@
             }
         }
 
-        // ====================== ПУБЛИКАЦИЯ ОТ ВЛАДЕЛЬЦА (с отладкой) ======================
+        // ====================== ПУБЛИКАЦИЯ ОТ АДМИНА (по новому ТЗ) ======================
         async function publishAdminOrder() {
             const task = document.getElementById('admin-task').value.trim();
-            const price = parseInt(document.getElementById('admin-price').value) || 0;
+            const clientPrice = parseInt(document.getElementById('admin-client-price').value) || 0;
             const address = document.getElementById('admin-address').value.trim();
             const comment = document.getElementById('admin-comment').value.trim();
+            const workersNeeded = parseInt(document.getElementById('admin-workers-needed').value) || 1;
 
-            console.log('📤 Отправляем от админа:', { task, price, address, comment });
-
-            if (!task || price < 500 || !address) {
-                return tg?.showAlert("Заполните задачу, ставку (мин. 500₽) и адрес");
+            if (!task || clientPrice < 500 || !address) {
+                return tg?.showAlert("Заполните задачу, адрес и ставку клиента (минимум 500 ₽)");
             }
+
+            const workerPrice = clientPrice - selectedMargin;
 
             const data = {
                 service: task,
-                worker_price: price,
+                client_price: clientPrice,
+                worker_price: workerPrice,
+                margin: selectedMargin,
                 address: address,
                 comment: comment,
+                workers_needed: workersNeeded,
                 source: 'admin',
                 status: 'published'
             };
@@ -446,21 +485,17 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                const result = await res.json();
-                console.log('Ответ сервера:', result);
-
                 if (res.ok) {
                     document.getElementById('admin-success').classList.remove('hidden');
                 } else {
-                    tg?.showAlert("Ошибка сервера: " + (result.error || 'проверь консоль'));
+                    tg?.showAlert("Ошибка сервера — проверь /api/order");
                 }
             } catch (e) {
-                console.error('Ошибка запроса:', e);
                 tg?.showAlert("Нет соединения");
             }
         }
 
-        console.log("✅ Полный код загружен. Кнопка видна только у владельца.");
+        console.log("✅ Полный код загружен. Замени файл полностью и залей на Vercel.");
     </script>
 </body>
 </html>
