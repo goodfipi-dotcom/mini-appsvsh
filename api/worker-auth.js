@@ -1,54 +1,52 @@
-import { createClient } from '@supabase/supabase-js';
+const { Pool } = require('pg');
+const axios = require('axios');
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-const MASTER_CODE = "2026";
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+const TG_TOKEN = process.env.TG_TOKEN;
+const ADMIN_ID = process.env.ADMIN_ID;
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { telegram_id, password, first_name } = req.body;
+  if (req.method !== 'POST') return res.status(405).end();
 
-  // Если Telegram ID не пришел (например, открыли в обычном браузере, а не в ТГ)
-  if (!telegram_id) {
-    return res.status(400).json({ ok: false, error: 'Зайдите через Telegram' });
+  const { password, telegram_id, first_name } = req.body;
+
+  if (password !== '2026') {
+    return res.status(401).json({ ok: false, error: 'Неверный код' });
   }
 
-  const cleanPass = password ? password.toString().trim() : "";
-
   try {
-    // 1. Проверяем, есть ли такой рабочий
-    let { data: worker } = await supabase
-      .from('workers')
-      .select('*')
-      .eq('telegram_id', telegram_id)
-      .single();
+    // Проверяем есть ли рабочий
+    let result = await pool.query('SELECT * FROM workers WHERE id = $1', [String(telegram_id)]);
 
-    if (worker) return res.status(200).json({ ok: true, worker });
+    if (result.rows.length === 0) {
+      // Новый рабочий — регистрируем
+      await pool.query(
+        'INSERT INTO workers (id, name) VALUES ($1, $2)',
+        [String(telegram_id), first_name || 'Рабочий']
+      );
+      result = await pool.query('SELECT * FROM workers WHERE id = $1', [String(telegram_id)]);
 
-    // 2. Если новый — проверяем мастер-код
-    if (cleanPass === MASTER_CODE) {
-      const { data: newWorker, error: createError } = await supabase
-        .from('workers')
-        .insert([{ 
-          name: first_name || 'Новый боец', 
-          telegram_id: telegram_id,
-          auth_code: MASTER_CODE,
-          total_hours: 0,
-          total_earnings: 0,
-          rating: 5.0,
-          level: 'Новичок'
-        }])
-        .select()
-        .single();
-
-      if (createError) throw createError;
-      return res.status(200).json({ ok: true, worker: newWorker });
+      // Уведомление тебе
+      await axios.post(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+        chat_id: ADMIN_ID,
+        text: `👷 <b>Новый рабочий!</b>\nИмя: ${first_name}\nTG ID: ${telegram_id}`,
+        parse_mode: 'HTML'
+      });
     }
 
-    return res.status(401).json({ ok: false, error: 'Неверный код доступа' });
+    return res.status(200).json({ ok: true, worker: result.rows[0] });
 
-  } catch (e) {
-    console.error("Auth Error:", e.message);
-    return res.status(500).json({ ok: false, error: 'Ошибка базы данных' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, error: err.message });
   }
 }
