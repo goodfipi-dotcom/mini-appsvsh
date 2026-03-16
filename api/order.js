@@ -1,176 +1,137 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>VSH Service - Октябрьский</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root {
-            --neon-blue: #00f2ff;
-            --main-bg: #0f172a;
-            --glass-bg: rgba(15, 23, 42, 0.85);
-            --text-color: #f8fafc;
+const { Pool } = require('pg');
+const axios = require('axios');
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+const TG_TOKEN = process.env.TG_TOKEN;
+const ADMIN_ID = process.env.ADMIN_ID;
+const BOT_API = `https://api.telegram.org/bot${TG_TOKEN}`;
+
+async function sendTG(chat_id, text, reply_markup = null) {
+  const payload = { chat_id, text, parse_mode: 'HTML' };
+  if (reply_markup) payload.reply_markup = reply_markup;
+  await axios.post(`${BOT_API}/sendMessage`, payload);
+}
+
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id SERIAL PRIMARY KEY,
+      name TEXT,
+      address TEXT,
+      task TEXT,
+      phone TEXT,
+      service TEXT,
+      client_price INTEGER DEFAULT 0,
+      worker_price INTEGER DEFAULT 0,
+      margin INTEGER DEFAULT 0,
+      workers_needed INTEGER DEFAULT 1,
+      comment TEXT,
+      status TEXT DEFAULT 'waiting_admin',
+      accepted_by TEXT[] DEFAULT '{}',
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS workers (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      total_hours INTEGER DEFAULT 0,
+      total_earnings INTEGER DEFAULT 0,
+      rating REAL DEFAULT 5.0,
+      level TEXT DEFAULT 'Новичок',
+      bank_details TEXT DEFAULT ''
+    );
+  `);
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  try {
+    await initDB();
+
+    // GET — список заказов для рабочих
+    if (req.method === 'GET') {
+      const { status } = req.query;
+      let query = 'SELECT * FROM orders';
+      let params = [];
+      if (status) {
+        query += ' WHERE status = $1';
+        params = [status];
+      }
+      query += ' ORDER BY created_at DESC';
+      const result = await pool.query(query, params);
+      return res.status(200).json(result.rows);
+    }
+
+    // POST — создать заказ
+    if (req.method === 'POST') {
+      const { name, address, task, phone, source, service, client_price, worker_price, margin, comment, workers_needed } = req.body;
+
+      if (source === 'admin') {
+        // Заказ от админа — сразу публикуем
+        const result = await pool.query(
+          `INSERT INTO orders (service, address, client_price, worker_price, margin, workers_needed, comment, status)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,'published') RETURNING id`,
+          [service || task, address, client_price || 0, worker_price || 0, margin || 0, workers_needed || 1, comment || '']
+        );
+        const orderId = result.rows[0].id;
+
+        // Уведомляем всех рабочих
+        const workersResult = await pool.query('SELECT id, name FROM workers');
+        for (const worker of workersResult.rows) {
+          try {
+            await sendTG(worker.id,
+              `🔥 <b>НОВЫЙ ЗАКАЗ №${orderId}</b>\n\n` +
+              `🔧 ${service || task}\n` +
+              `💰 Ставка: ${worker_price}₽\n\n` +
+              `Открой приложение чтобы принять заказ!`
+            );
+          } catch (e) { /* рабочий мог заблокировать бота */ }
         }
 
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background-color: var(--main-bg);
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: var(--text-color); 
-            margin: 0; padding: 0; min-height: 100vh;
-            transition: background 0.5s ease-in-out; /* Плавная смена фона */
-        }
+        // Подтверждение админу
+        await sendTG(ADMIN_ID,
+          `✅ <b>Заказ №${orderId} опубликован!</b>\n\n` +
+          `🔧 ${service || task}\n📍 ${address}\n` +
+          `💰 Клиент: ${client_price}₽ | Рабочим: ${worker_price}₽ | Маржа: ${margin}₽\n` +
+          `👷 Нужно: ${workers_needed} чел.`
+        );
 
-        /* Начальный фон (Главная) */
-        .bg-main {
-            background-image: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), 
-                              url('https://images.unsplash.com/photo-1541888946425-d81bb19480c5?q=80&w=2070&auto=format&fit=crop');
-        }
+        return res.status(200).json({ success: true, orderId });
 
-        /* Фон Заказа (Детализированные рабочие) */
-        .bg-customer {
-            background-image: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
-                              url('https://img.freepik.com/free-photo/group-of-professional-industrial-workers-in-safety-uniform-standing-in-front-of-factory_342744-1560.jpg?w=1380');
-        }
+      } else {
+        // Заявка от клиента
+        const result = await pool.query(
+          `INSERT INTO orders (name, address, task, phone, status)
+           VALUES ($1,$2,$3,$4,'waiting_admin') RETURNING id`,
+          [name || '', address, task, phone]
+        );
+        const orderId = result.rows[0].id;
 
-        .container { padding: 20px; max-width: 500px; margin: 0 auto; }
+        // Уведомление тебе с кнопками
+        await sendTG(ADMIN_ID,
+          `🔔 <b>НОВАЯ ЗАЯВКА №${orderId}</b>\n\n` +
+          `👤 ${name}\n📍 ${address}\n🔧 ${task}\n📞 ${phone}`,
+          {
+            inline_keyboard: [[
+              { text: '✅ ОДОБРИТЬ', callback_data: `approve_${orderId}` },
+              { text: '❌ ОТКЛОНИТЬ', callback_data: `reject_${orderId}` }
+            ]]
+          }
+        );
 
-        .card { 
-            background: var(--glass-bg); 
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            border-radius: 20px; padding: 20px; margin-bottom: 20px; 
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); 
-        }
+        return res.status(200).json({ success: true, orderId });
+      }
+    }
 
-        h1 { color: var(--neon-blue); text-align: center; text-transform: uppercase; letter-spacing: 2px; margin: 0; font-size: 24px; }
-
-        .btn { 
-            display: flex; align-items: center; justify-content: center; 
-            background: linear-gradient(135deg, #2481cc, #00d4ff);
-            color: #fff; border: none; padding: 18px; margin: 15px 0; 
-            border-radius: 16px; width: 100%; font-weight: bold; font-size: 16px; 
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
-        }
-
-        .btn-outline { background: transparent; border: 2px solid var(--neon-blue); color: var(--neon-blue); }
-
-        .input { 
-            width: 100%; padding: 14px; margin: 10px 0; border-radius: 12px; 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            background: rgba(15, 23, 42, 0.6); color: #fff; font-size: 16px; box-sizing: border-box;
-        }
-
-        .benefit { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; font-size: 14px; }
-        .benefit-icon { font-size: 18px; color: var(--neon-blue); }
-
-        .hidden { display: none !important; }
-
-        .back-link { color: var(--neon-blue); cursor: pointer; display: block; margin-bottom: 10px; font-size: 14px; }
-    </style>
-</head>
-<body class="bg-main">
-
-    <div id="main-menu" class="container">
-        <div class="card" style="margin-top: 40px; text-align:center;">
-            <h1>VSH SERVICE</h1>
-            <p style="opacity: 0.7;">Октябрьский — Сила в кадрах</p>
-        </div>
-        <button class="btn" onclick="showPage('customer')">🙋‍♂️ ЗАКАЗАТЬ РАБОЧИХ</button>
-        <button class="btn btn-outline" onclick="showPage('worker-auth')">🛠️ ВХОД ДЛЯ БРИГАД</button>
-    </div>
-
-    <div id="customer" class="hidden container">
-        <span class="back-link" onclick="showPage('main-menu')">← НА ГЛАВНУЮ</span>
-        <div class="card">
-            <h2 style="color: var(--neon-blue); margin-top:0; font-size: 20px;">Глаза горят, работа кипит:</h2>
-            <div class="benefit"><span class="benefit-icon">🔥</span><span><b>Прощай, Авито:</b> Забудь про бесконечные обзвоны и "недоступы". Мы здесь.</span></div>
-            <div class="benefit"><span class="benefit-icon">⏱️</span><span><b>Скорость 10/10:</b> Рабочая бригада будет на месте через 30-60 минут.</span></div>
-            <div class="benefit"><span class="benefit-icon">💰</span><span><b>Честная цена:</b> Никаких скрытых доплат за этажи и тяжести.</span></div>
-            <div class="benefit"><span class="benefit-icon">🤝</span><span><b>Только свои:</b> Все ребята местные, вежливые и трезвые.</span></div>
-        </div>
-        <div class="card" id="order-form">
-            <input type="text" id="cust-name" class="input" placeholder="👤 Ваше имя">
-            <input type="text" id="address" class="input" placeholder="📍 Адрес">
-            <input type="text" id="task" class="input" placeholder="🔧 Что нужно сделать?">
-            <input type="tel" id="phone" class="input" placeholder="📞 Номер телефона">
-            <button class="btn" onclick="sendOrder()">🚀 ОТПРАВИТЬ ЗАЯВКУ</button>
-        </div>
-        <div class="card hidden" id="order-success" style="text-align: center;">
-            <div style="font-size: 50px; margin-bottom: 10px;">⏳</div>
-            <h2 style="color: var(--neon-blue);">Заявка отправлена!</h2>
-            <p>Диспетчер получил ваш запрос. Статус заявки теперь доступен в чате с ботом.</p>
-            <button class="btn btn-outline" onclick="showPage('main-menu')">ВЕРНУТЬСЯ</button>
-        </div>
-    </div>
-
-    <div id="worker-auth" class="hidden container">
-        <span class="back-link" onclick="showPage('main-menu')">← НАЗАД</span>
-        <div class="card">
-            <h2>Доступ бригад</h2>
-            <input type="password" id="worker-pass" class="input" placeholder="Код доступа">
-            <button class="btn" onclick="checkAuth()">ВОЙТИ</button>
-        </div>
-    </div>
-
-    <div id="worker-cabinet" class="hidden container">
-        <div class="card">
-            <h2 style="color: var(--neon-blue);">🛠️ КАБИНЕТ VSH</h2>
-            <p>Вы в системе. Новые заказы придут в бот.</p>
-            <button class="btn btn-outline" onclick="showPage('main-menu')">ВЫЙТИ</button>
-        </div>
-    </div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        function showPage(id) {
-            ['main-menu', 'customer', 'worker-auth', 'worker-cabinet'].forEach(p => {
-                document.getElementById(p).classList.add('hidden');
-            });
-            document.getElementById(id).classList.remove('hidden');
-
-            // Смена фона в зависимости от страницы
-            if (id === 'customer') {
-                document.body.className = 'bg-customer';
-            } else {
-                document.body.className = 'bg-main';
-            }
-            
-            // Сброс формы если вернулись назад
-            if (id === 'customer') {
-                document.getElementById('order-form').classList.remove('hidden');
-                document.getElementById('order-success').classList.add('hidden');
-            }
-        }
-
-        function checkAuth() {
-            if (document.getElementById('worker-pass').value === '777') showPage('worker-cabinet');
-            else tg.showAlert("❌ Ошибка");
-        }
-
-        function sendOrder() {
-            const data = {
-                type: 'new_order_vsh',
-                name: document.getElementById('cust-name').value,
-                address: document.getElementById('address').value,
-                task: document.getElementById('task').value,
-                phone: document.getElementById('phone').value
-            };
-            if (!data.task || !data.phone || !data.address) return tg.showAlert("Заполните адрес, телефон и задачу!");
-
-            // Отправляем данные в бот
-            tg.sendData(JSON.stringify(data));
-
-            // Переключаем на экран успеха ВНУТРИ приложения, не закрывая его сразу
-            document.getElementById('order-form').classList.add('hidden');
-            document.getElementById('order-success').classList.remove('hidden');
-        }
-    </script>
-</body>
-</html>
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+}
