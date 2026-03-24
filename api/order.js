@@ -45,13 +45,12 @@ async function initDB() {
     );
   `);
 
-  // Добавляем колонки city и phone если их нет (для существующей базы)
+  // Миграция: добавляем колонки если их нет
   const cols = await pool.query(`
     SELECT column_name FROM information_schema.columns 
     WHERE table_name = 'orders'
   `);
   const existing = cols.rows.map(r => r.column_name);
-
   if (!existing.includes('city')) {
     await pool.query(`ALTER TABLE orders ADD COLUMN city TEXT DEFAULT 'Октябрьский'`);
   }
@@ -74,12 +73,10 @@ export default async function handler(req, res) {
       const { status } = req.query;
       let query = 'SELECT * FROM orders';
       const params = [];
-
       if (status) {
         query += ' WHERE status = $1';
         params.push(status);
       }
-
       query += ' ORDER BY created_at DESC';
       const result = await pool.query(query, params);
       return res.status(200).json(result.rows);
@@ -90,11 +87,13 @@ export default async function handler(req, res) {
       const {
         name, address, task, phone, source, service,
         city, client_price, worker_price, margin,
-        comment, workers_needed, status
+        comment, workers_needed
       } = req.body;
 
       if (source === 'admin') {
-        // ── Заказ от админа — сразу публикуем ──
+        // ── Заказ от админа — сразу публикуем в БД ──
+        // Рассылку рабочим НЕ делаем здесь — её делает бот (bot.py)
+        // чтобы не было двойных уведомлений
         const result = await pool.query(
           `INSERT INTO orders (service, address, phone, city, client_price, worker_price, margin, workers_needed, comment, status)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'published') RETURNING id`,
@@ -111,41 +110,6 @@ export default async function handler(req, res) {
           ]
         );
         const orderId = result.rows[0].id;
-
-        // Уведомляем всех рабочих в Telegram
-        try {
-          const workersResult = await pool.query('SELECT id, name FROM workers');
-          for (const worker of workersResult.rows) {
-            try {
-              await sendTG(worker.id,
-                `🔥 <b>НОВАЯ ЗАЯВКА №${orderId}</b>\n\n` +
-                `🔧 ${service || task}\n` +
-                `📍 ${city || 'Октябрьский'}, ${address}\n` +
-                `👷 Нужно рабочих: ${workers_needed || 1}\n` +
-                (comment ? `💬 ${comment}\n` : '') +
-                `\nОткрой приложение чтобы принять заявку!`
-              );
-            } catch (e) {
-              // Рабочий мог заблокировать бота — пропускаем
-            }
-          }
-        } catch (e) {
-          console.error('Workers notify error:', e.message);
-        }
-
-        // Подтверждение админу
-        try {
-          await sendTG(ADMIN_ID,
-            `✅ <b>Заказ №${orderId} опубликован!</b>\n\n` +
-            `🔧 ${service || task}\n` +
-            `📍 ${city}, ${address}\n` +
-            `📞 ${phone}\n` +
-            `👷 Нужно: ${workers_needed || 1} чел.` +
-            (comment ? `\n💬 ${comment}` : '')
-          );
-        } catch (e) {
-          console.error('Admin notify error:', e.message);
-        }
 
         return res.status(200).json({ success: true, orderId });
 
