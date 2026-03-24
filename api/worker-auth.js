@@ -1,20 +1,19 @@
 import pg from 'pg';
-import axios from 'axios';
-
 const { Pool } = pg;
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-const TG_TOKEN = process.env.TG_TOKEN;
-const ADMIN_ID = process.env.ADMIN_ID;
+const WORKER_PIN = process.env.WORKER_PIN || '2026';
 
 async function initDB() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS workers (
       id TEXT PRIMARY KEY,
       name TEXT,
+      telegram_username TEXT DEFAULT '',
       stars INTEGER DEFAULT 0,
       total_orders INTEGER DEFAULT 0,
       total_earnings INTEGER DEFAULT 0,
@@ -22,16 +21,18 @@ async function initDB() {
       level TEXT DEFAULT 'Новобранец',
       created_at TIMESTAMP DEFAULT NOW()
     );
-    CREATE TABLE IF NOT EXISTS orders (
-      id SERIAL PRIMARY KEY,
-      name TEXT, address TEXT, task TEXT, service TEXT,
-      phone TEXT, city TEXT DEFAULT 'Октябрьский',
-      comment TEXT, workers_needed INTEGER DEFAULT 1,
-      client_price INTEGER DEFAULT 0, worker_price INTEGER DEFAULT 0,
-      margin INTEGER DEFAULT 0, status TEXT DEFAULT 'waiting_admin',
-      accepted_by TEXT[] DEFAULT '{}', created_at TIMESTAMP DEFAULT NOW()
-    );
   `);
+  // Миграция: добавляем telegram_username если нет
+  const cols = await pool.query(`
+    SELECT column_name FROM information_schema.columns WHERE table_name = 'workers'
+  `);
+  const existing = cols.rows.map(r => r.column_name);
+  if (!existing.includes('telegram_username')) {
+    await pool.query(`ALTER TABLE workers ADD COLUMN telegram_username TEXT DEFAULT ''`);
+  }
+  if (!existing.includes('stars')) {
+    await pool.query(`ALTER TABLE workers ADD COLUMN stars INTEGER DEFAULT 0`);
+  }
 }
 
 export default async function handler(req, res) {
@@ -43,47 +44,53 @@ export default async function handler(req, res) {
   try {
     await initDB();
 
-    // GET — список рабочих для лидерборда и админки
+    // GET — список рабочих (лидерборд)
     if (req.method === 'GET') {
       const result = await pool.query(
-        'SELECT id, name, stars, total_orders, level, bank_details FROM workers ORDER BY stars DESC'
+        'SELECT id, name, telegram_username, stars, total_orders, total_earnings, created_at FROM workers ORDER BY stars DESC, total_orders DESC LIMIT 50'
       );
       return res.status(200).json(result.rows);
     }
 
     // POST — вход / регистрация
     if (req.method === 'POST') {
-      const { password, telegram_id, first_name } = req.body;
-      const PIN = process.env.WORKER_PIN || '2026';
+      const { password, telegram_id, first_name, telegram_username } = req.body;
 
-      if (password !== PIN) {
-        return res.status(401).json({ ok: false, error: 'Неверный код' });
+      if (password !== WORKER_PIN) {
+        return res.status(403).json({ error: 'Wrong PIN' });
       }
 
-      const workerId = String(telegram_id);
-      let result = await pool.query('SELECT * FROM workers WHERE id = $1', [workerId]);
-
-      if (result.rows.length === 0) {
-        await pool.query(
-          `INSERT INTO workers (id, name) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`,
-          [workerId, first_name || 'Рабочий']
-        );
-        result = await pool.query('SELECT * FROM workers WHERE id = $1', [workerId]);
-
-        try {
-          await axios.post(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-            chat_id: ADMIN_ID,
-            text: `👷 <b>Новый рабочий зарегистрирован!</b>\nИмя: ${first_name}\nID: <code>${telegram_id}</code>`,
-            parse_mode: 'HTML'
-          });
-        } catch (e) {}
+      if (!telegram_id) {
+        return res.status(400).json({ error: 'Missing telegram_id' });
       }
 
-      return res.status(200).json({ ok: true, worker: result.rows[0] });
+      const wid = String(telegram_id);
+      const existing = await pool.query('SELECT * FROM workers WHERE id = $1', [wid]);
+
+      if (existing.rows.length > 0) {
+        // Обновляем имя и username при каждом входе
+        if (first_name || telegram_username) {
+          await pool.query(
+            'UPDATE workers SET name = COALESCE(NULLIF($1, \'\'), name), telegram_username = COALESCE(NULLIF($2, \'\'), telegram_username) WHERE id = $3',
+            [first_name || '', telegram_username || '', wid]
+          );
+        }
+        const updated = await pool.query('SELECT * FROM workers WHERE id = $1', [wid]);
+        return res.status(200).json({ ok: true, worker: updated.rows[0] });
+      }
+
+      // Новый рабочий
+      await pool.query(
+        'INSERT INTO workers (id, name, telegram_username, stars, total_orders) VALUES ($1, $2, $3, 0, 0)',
+        [wid, first_name || 'Рабочий', telegram_username || '']
+      );
+      const newWorker = await pool.query('SELECT * FROM workers WHERE id = $1', [wid]);
+      return res.status(200).json({ ok: true, worker: newWorker.rows[0], isNew: true });
     }
 
+    return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
-    console.error('worker-auth error:', err);
-    return res.status(500).json({ ok: false, error: err.message });
+    console.error('Worker auth error:', err);
+    return res.status(500).json({ error: err.message });
   }
 }
