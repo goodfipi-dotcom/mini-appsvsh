@@ -164,6 +164,16 @@ textarea.input{height:80px;resize:none}
 .admin-order-sub{font-size:11px;color:var(--muted);margin-top:2px}
 .admin-order-del{width:36px;height:36px;border-radius:10px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:var(--danger);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .admin-order-del:active{transform:scale(.9);background:rgba(248,113,113,.25)}
+.admin-order-actions{display:flex;gap:6px;flex-shrink:0}
+.admin-order-btn{width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;border:none;transition:all .15s}
+.admin-order-btn:active{transform:scale(.9)}
+.admin-order-btn.approve{background:rgba(16,185,129,.12);color:var(--success)}
+.admin-order-btn.edit{background:rgba(56,189,248,.12);color:var(--accent)}
+.admin-order-btn.del{background:rgba(248,113,113,.1);color:var(--danger)}
+.admin-order-detail{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
+.admin-order-detail span{color:var(--text)}
+.admin-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin:16px 0 8px;padding-left:4px}
+.admin-section-label.waiting{color:var(--warn)}
 .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .status-published{background:var(--success)}
 .status-accepted{background:var(--warn)}
@@ -448,6 +458,35 @@ textarea.input{height:80px;resize:none}
   </div>
 </div>
 
+<!-- MODAL: EDIT ORDER -->
+<div id="modal-edit" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ Редактировать заявку</div>
+    <input type="hidden" id="edit-id">
+    <label class="input-label">Город</label>
+    <div class="city-tabs" id="edit-city-tabs">
+      <div class="city-tab active" onclick="selectEditCity(this,'Октябрьский')">Октябрьский</div>
+      <div class="city-tab" onclick="selectEditCity(this,'Туймазы')">Туймазы</div>
+    </div>
+    <label class="input-label">Задача</label>
+    <input type="text" class="input" id="edit-task" placeholder="Описание задачи">
+    <label class="input-label">Адрес</label>
+    <input type="text" class="input" id="edit-address" placeholder="Улица, дом">
+    <label class="input-label">Телефон заказчика</label>
+    <input type="text" class="input" id="edit-phone" placeholder="+7...">
+    <label class="input-label">Имя заказчика</label>
+    <input type="text" class="input" id="edit-name" placeholder="Имя">
+    <label class="input-label">Кол-во рабочих</label>
+    <input type="number" class="input" id="edit-workers" value="1" min="1" max="20">
+    <label class="input-label">Комментарий</label>
+    <textarea class="input" id="edit-comment" placeholder="Дополнительно..."></textarea>
+    <button class="btn btn-primary" onclick="saveEditOrder()">💾 Сохранить изменения</button>
+    <button class="btn btn-success" style="margin-top:8px" id="btn-edit-publish" onclick="approveAndPublish()">✅ Одобрить и опубликовать</button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-edit')">Отмена</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -688,20 +727,163 @@ async function publishOrder(){
 function resetAdmin(){['a-task','a-address','a-phone','a-comment'].forEach(id=>document.getElementById(id).value='');document.getElementById('a-workers').value='1';document.getElementById('admin-form').classList.remove('hidden');document.getElementById('admin-ok').classList.add('hidden')}
 
 // ADMIN: управление заявками
+let allAdminOrders = [];
+let editCity = 'Октябрьский';
+
+function selectEditCity(el, city) {
+  editCity = city;
+  document.querySelectorAll('#edit-city-tabs .city-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
 async function loadAdminOrders(){
   const list=document.getElementById('admin-orders-list');
   const data=await apiCall('GET','/api/order');
   if(!data||!Array.isArray(data)||!data.length){list.innerHTML='<div style="text-align:center;padding:16px;font-size:13px;color:var(--muted)">Нет заявок</div>';return}
-  list.innerHTML=data.map(o=>{
-    const statusClass=o.status==='published'?'status-published':o.status==='accepted'?'status-accepted':'status-waiting';
-    const statusText=o.status==='published'?'Активна':o.status==='accepted'?'Принята':'Ожидание';
-    return'<div class="admin-order-item">'
-      +'<div class="status-dot '+statusClass+'"></div>'
-      +'<div class="admin-order-info"><div class="admin-order-title">#'+o.id+' '+(o.service||o.task||'Задача')+'</div>'
-      +'<div class="admin-order-sub">'+statusText+' · '+(o.city||'')+' · '+timeAgo(o.created_at)+'</div></div>'
-      +'<div class="admin-order-del" onclick="askDeleteOrder('+o.id+',\''+((o.service||o.task||'').replace(/'/g,"\\'"))+'\')">🗑️</div>'
-      +'</div>'
-  }).join('');
+
+  allAdminOrders = data;
+
+  // Разделяем: ожидающие модерации (от заказчиков) и остальные
+  const waiting = data.filter(o => o.status === 'waiting_admin');
+  const active = data.filter(o => o.status !== 'waiting_admin');
+
+  let html = '';
+
+  // ── Заявки от заказчиков (ждут модерации) ──
+  if (waiting.length > 0) {
+    html += '<div class="admin-section-label waiting">📩 Заявки от заказчиков (' + waiting.length + ')</div>';
+    html += waiting.map(o => renderAdminOrder(o, true)).join('');
+  }
+
+  // ── Активные / принятые ──
+  if (active.length > 0) {
+    html += '<div class="admin-section-label">📋 Опубликованные и принятые (' + active.length + ')</div>';
+    html += active.map(o => renderAdminOrder(o, false)).join('');
+  }
+
+  list.innerHTML = html;
+}
+
+function renderAdminOrder(o, isWaiting) {
+  const statusClass = o.status==='published' ? 'status-published' : o.status==='accepted' ? 'status-accepted' : 'status-waiting';
+  const statusText = o.status==='published' ? 'Активна' : o.status==='accepted' ? 'Принята' : 'Ожидает модерации';
+
+  let detail = '';
+  if (isWaiting) {
+    // Для заявок от заказчиков показываем полную информацию
+    detail = '<div class="admin-order-detail">'
+      + (o.name ? '👤 <span>' + o.name + '</span><br>' : '')
+      + (o.phone ? '📞 <span>' + o.phone + '</span><br>' : '')
+      + (o.address ? '📍 <span>' + o.address + '</span><br>' : '')
+      + (o.city ? '🏙️ <span>' + o.city + '</span><br>' : '')
+      + (o.task ? '🔧 <span>' + o.task + '</span><br>' : '')
+      + (o.comment ? '💬 <span>' + o.comment + '</span>' : '')
+      + '</div>';
+  }
+
+  return '<div class="admin-order-item" style="flex-wrap:wrap">'
+    + '<div class="status-dot ' + statusClass + '"></div>'
+    + '<div class="admin-order-info" style="min-width:0;flex:1">'
+      + '<div class="admin-order-title">#' + o.id + ' ' + (o.service || o.task || 'Задача') + '</div>'
+      + '<div class="admin-order-sub">' + statusText + ' · ' + (o.city || '') + ' · ' + timeAgo(o.created_at) + '</div>'
+      + detail
+    + '</div>'
+    + '<div class="admin-order-actions">'
+      + (isWaiting ? '<div class="admin-order-btn approve" onclick="quickApprove(' + o.id + ')" title="Одобрить">✅</div>' : '')
+      + '<div class="admin-order-btn edit" onclick="openEditModal(' + o.id + ')" title="Редактировать">✏️</div>'
+      + '<div class="admin-order-btn del" onclick="askDeleteOrder(' + o.id + ',\'' + ((o.service||o.task||'').replace(/'/g,"\\'")) + '\')" title="Удалить">🗑️</div>'
+    + '</div>'
+    + '</div>';
+}
+
+function openEditModal(orderId) {
+  const o = allAdminOrders.find(x => x.id === orderId);
+  if (!o) { showToast('Заявка не найдена', 'error'); return; }
+
+  document.getElementById('edit-id').value = o.id;
+  document.getElementById('edit-task').value = o.service || o.task || '';
+  document.getElementById('edit-address').value = o.address || '';
+  document.getElementById('edit-phone').value = o.phone || '';
+  document.getElementById('edit-name').value = o.name || '';
+  document.getElementById('edit-workers').value = o.workers_needed || 1;
+  document.getElementById('edit-comment').value = o.comment || '';
+
+  // Город
+  editCity = o.city || 'Октябрьский';
+  document.querySelectorAll('#edit-city-tabs .city-tab').forEach(t => {
+    t.classList.toggle('active', t.textContent === editCity);
+  });
+
+  // Показываем/скрываем кнопку "Одобрить и опубликовать"
+  const btnPub = document.getElementById('btn-edit-publish');
+  if (o.status === 'waiting_admin') {
+    btnPub.classList.remove('hidden');
+  } else {
+    btnPub.classList.add('hidden');
+  }
+
+  document.getElementById('modal-edit').classList.remove('hidden');
+}
+
+async function saveEditOrder() {
+  const id = document.getElementById('edit-id').value;
+  const res = await apiCall('PATCH', '/api/order', {
+    id: parseInt(id),
+    service: document.getElementById('edit-task').value.trim(),
+    address: document.getElementById('edit-address').value.trim(),
+    phone: document.getElementById('edit-phone').value.trim(),
+    city: editCity,
+    workers_needed: parseInt(document.getElementById('edit-workers').value) || 1,
+    comment: document.getElementById('edit-comment').value.trim()
+  });
+
+  if (res.success) {
+    closeModal('modal-edit');
+    showToast('✅ Заявка #' + id + ' обновлена', 'success');
+    loadAdminOrders();
+  } else {
+    showToast(res.error || 'Ошибка сохранения', 'error');
+  }
+}
+
+async function approveAndPublish() {
+  const id = document.getElementById('edit-id').value;
+  const res = await apiCall('PATCH', '/api/order', {
+    id: parseInt(id),
+    service: document.getElementById('edit-task').value.trim(),
+    address: document.getElementById('edit-address').value.trim(),
+    phone: document.getElementById('edit-phone').value.trim(),
+    city: editCity,
+    workers_needed: parseInt(document.getElementById('edit-workers').value) || 1,
+    comment: document.getElementById('edit-comment').value.trim(),
+    status: 'published'
+  });
+
+  if (res.success) {
+    closeModal('modal-edit');
+    showToast('✅ Заявка #' + id + ' одобрена и опубликована!', 'success');
+    loadAdminOrders();
+    loadOrders();
+  } else {
+    showToast(res.error || 'Ошибка', 'error');
+  }
+}
+
+async function quickApprove(orderId) {
+  const o = allAdminOrders.find(x => x.id === orderId);
+  if (!o) return;
+  const res = await apiCall('PATCH', '/api/order', {
+    id: orderId,
+    service: o.service || o.task || '',
+    status: 'published'
+  });
+  if (res.success) {
+    showToast('✅ Заявка #' + orderId + ' опубликована!', 'success');
+    loadAdminOrders();
+    loadOrders();
+  } else {
+    showToast(res.error || 'Ошибка', 'error');
+  }
 }
 
 function askDeleteOrder(id,title){deleteOrderId=id;document.getElementById('delete-info').textContent='Удалить заявку #'+id+' «'+title+'»?';document.getElementById('modal-delete').classList.remove('hidden')}
