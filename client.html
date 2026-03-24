@@ -35,7 +35,8 @@ body {
 
 /* ── HERO ── */
 .hero {
-  background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 40%, #0ea5e9 100%);
+  background: linear-gradient(135deg, rgba(12,74,110,0.92) 0%, rgba(3,105,161,0.88) 40%, rgba(14,165,233,0.85) 100%),
+              url('img/portfolio-1.jpg') center/cover no-repeat;
   color: white;
   padding: 0 20px;
   min-height: 520px;
@@ -266,6 +267,75 @@ textarea.form-input { height: 100px; resize: none; }
 
 /* ── ANIMATIONS ── */
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+@keyframes checkPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+.hidden { display: none !important; }
+
+/* ── RECEPTION ── */
+.reception { padding: 0 0 40px; animation: fadeIn .5s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.reception-hero {
+  background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #34d399 100%);
+  color: white; text-align: center; padding: 60px 20px;
+  position: relative; overflow: hidden;
+}
+.reception-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.05) 0%, transparent 40%);
+  pointer-events: none;
+}
+.reception-check { font-size: 72px; margin-bottom: 16px; animation: scaleIn .5s ease, checkPulse 2s ease infinite; }
+.reception-title { font-family: 'Bebas Neue', sans-serif; font-size: 40px; letter-spacing: 2px; margin-bottom: 12px; }
+.reception-sub { font-size: 16px; opacity: .85; max-width: 400px; margin: 0 auto 28px; line-height: 1.6; }
+
+.reception-about { max-width: 600px; margin: 0 auto; padding: 48px 20px 32px; }
+.reception-section-title {
+  font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1px;
+  text-align: center; color: var(--text); margin-bottom: 20px;
+}
+.reception-text { font-size: 15px; color: var(--muted); line-height: 1.8; text-align: center; margin-bottom: 32px; }
+.reception-features { display: flex; flex-direction: column; gap: 16px; }
+.reception-feature {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px;
+  box-shadow: var(--shadow); animation: fadeUp .5s ease both;
+}
+.reception-feature:nth-child(1) { animation-delay: .1s; }
+.reception-feature:nth-child(2) { animation-delay: .2s; }
+.reception-feature:nth-child(3) { animation-delay: .3s; }
+.reception-feature:nth-child(4) { animation-delay: .4s; }
+.reception-feature:nth-child(5) { animation-delay: .5s; }
+.rf-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.rf-text { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.rf-text b { color: var(--text); }
+
+.reception-portfolio { max-width: 700px; margin: 0 auto; padding: 32px 20px; }
+.portfolio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.portfolio-card {
+  border-radius: 18px; overflow: hidden; position: relative;
+  min-height: 200px; animation: fadeUp .5s ease both;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+.portfolio-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: cover; background-position: center;
+}
+.portfolio-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%);
+}
+.portfolio-content {
+  position: relative; z-index: 1; padding: 24px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  min-height: 200px; color: white;
+}
+.portfolio-emoji { font-size: 40px; margin-bottom: 10px; }
+.portfolio-name { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; margin-bottom: 6px; }
+.portfolio-desc { font-size: 13px; opacity: .8; line-height: 1.5; }
+
+.reception-cta { text-align: center; padding: 40px 20px 20px; }
 </style>
 </head>
 <body>
@@ -275,7 +345,7 @@ textarea.form-input { height: 100px; resize: none; }
   <div class="hero-logo">VSH<span>.</span></div>
   <div class="hero-tagline">Октябрьский · Туймазы</div>
   <h1 class="hero-title">Рабочие руки за 30 минут</h1>
-  <p class="hero-sub">Грузчики, мастера и разнорабочие — без посредников, по честным ценам. Оставьте заявку — мы подберём исполнителя.</p>
+  <p class="hero-sub">Грузчики, мастера и разнорабочие — без посредников, по самым честным ценам. Забудьте про Авито и переплаты. Одна заявка — и мы всё организуем.</p>
   <a href="#order" class="hero-btn">📝 Оставить заявку</a>
 </section>
 
@@ -290,28 +360,28 @@ textarea.form-input { height: 100px; resize: none; }
     </div>
     <div class="adv-card">
       <div class="adv-icon">💰</div>
-      <div class="adv-name">Дешевле Авито</div>
-      <div class="adv-desc">Без посредников и накруток. Вы платите напрямую исполнителю по честной цене.</div>
+      <div class="adv-name">Честные цены</div>
+      <div class="adv-desc">Никаких посредников и накруток. Самые доступные цены на рынке — забудьте про Авито и переплаты.</div>
     </div>
     <div class="adv-card">
       <div class="adv-icon">⭐</div>
-      <div class="adv-name">Проверенные</div>
-      <div class="adv-desc">Система рейтинга и званий. Работают только исполнители с подтверждённой репутацией.</div>
+      <div class="adv-name">Проверенные рабочие</div>
+      <div class="adv-desc">Только крепкие и надёжные исполнители. Система рейтинга и званий — случайных людей не бывает.</div>
     </div>
     <div class="adv-card">
       <div class="adv-icon">🔒</div>
-      <div class="adv-name">Прозрачно</div>
-      <div class="adv-desc">Вы знаете кто к вам едет. Рейтинг, отзывы, история выполненных заказов.</div>
+      <div class="adv-name">Полная прозрачность</div>
+      <div class="adv-desc">Вы сразу видите стоимость работы. Никаких скрытых комиссий и неожиданных доплат.</div>
     </div>
     <div class="adv-card">
       <div class="adv-icon">🏗️</div>
       <div class="adv-name">Любая задача</div>
-      <div class="adv-desc">Грузчики, разнорабочие, мастера на все руки. Любой объём — от одного человека до бригады.</div>
+      <div class="adv-desc">Грузчики, разнорабочие, мастера. От одного человека до полной бригады — под любой объём.</div>
     </div>
     <div class="adv-card">
       <div class="adv-icon">📱</div>
-      <div class="adv-name">Современно</div>
-      <div class="adv-desc">Никаких звонков по 10 номерам. Одна заявка — и мы всё организуем за вас.</div>
+      <div class="adv-name">Умный подбор</div>
+      <div class="adv-desc">Приложение само подбирает рабочую силу. Не нужно обзванивать десятки номеров — одна заявка решает всё.</div>
     </div>
   </div>
 </section>
@@ -321,7 +391,7 @@ textarea.form-input { height: 100px; resize: none; }
   <div class="form-section-title">📝 Оставить заявку</div>
   <div class="form-section-sub">Заполните форму — мы свяжемся в течение 15 минут</div>
 
-  <div class="form-card">
+  <div class="form-card" id="form-card">
     <label class="form-label">Ваше имя *</label>
     <input type="text" class="form-input" id="f-name" placeholder="Как к вам обращаться?">
 
@@ -343,6 +413,89 @@ textarea.form-input { height: 100px; resize: none; }
     <button class="form-btn" id="f-btn" onclick="submitOrder()">📝 Отправить заявку</button>
 
     <div class="form-msg" id="f-msg"></div>
+  </div>
+</section>
+
+<!-- RECEPTION — появляется после отправки заявки -->
+<section class="reception hidden" id="reception">
+  <div class="reception-hero">
+    <div class="reception-check">✅</div>
+    <h2 class="reception-title">Заявка принята!</h2>
+    <p class="reception-sub">Мы перезвоним в течение 15 минут и подберём лучшего исполнителя.</p>
+    <button class="hero-btn" onclick="document.getElementById('reception').classList.add('hidden');document.getElementById('form-card').style.display='block';window.scrollTo({top:0,behavior:'smooth'})">📝 Создать ещё одну заявку</button>
+  </div>
+
+  <div class="reception-about">
+    <div class="reception-section-title">💎 Почему VSH Service?</div>
+    <div class="reception-text">
+      <b>VSH Service</b> — это современная платформа быстрого найма рабочих в Октябрьском и Туймазах. Мы создали экосистему, в которой заказчики получают лучший сервис по самым честным ценам, а исполнители — стабильную работу без посредников.
+    </div>
+    <div class="reception-features">
+      <div class="reception-feature">
+        <div class="rf-icon">💪</div>
+        <div class="rf-text"><b>Только проверенные рабочие.</b> Каждый исполнитель проходит проверку. Система рейтинга и званий — у нас работают только надёжные люди.</div>
+      </div>
+      <div class="reception-feature">
+        <div class="rf-icon">🤖</div>
+        <div class="rf-text"><b>Умный подбор исполнителей.</b> Наше приложение автоматически находит свободных рабочих — вам не нужно никого искать и обзванивать.</div>
+      </div>
+      <div class="reception-feature">
+        <div class="rf-icon">💰</div>
+        <div class="rf-text"><b>Прозрачная цена без накруток.</b> Вы сразу видите стоимость. Никаких посредников, скрытых комиссий и неожиданных доплат.</div>
+      </div>
+      <div class="reception-feature">
+        <div class="rf-icon">⚡</div>
+        <div class="rf-text"><b>Самые низкие цены на рынке.</b> Забудьте про Авито с завышенными ценниками. У нас прямая связь «заказчик — исполнитель» без лишних звеньев.</div>
+      </div>
+      <div class="reception-feature">
+        <div class="rf-icon">🚀</div>
+        <div class="rf-text"><b>Передовые технологии.</b> Мы используем только современные решения — быстро, удобно, автоматизированно. Это совершенно новый уровень сервиса.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reception-portfolio">
+    <div class="reception-section-title">🏗️ Наши услуги</div>
+    <div class="portfolio-grid">
+      <div class="portfolio-card" style="animation-delay:0s">
+        <div class="portfolio-bg" style="background-image:url('img/portfolio-1.jpg');background-size:cover;background-position:center"></div>
+        <div class="portfolio-content">
+          <div class="portfolio-emoji">📦</div>
+          <div class="portfolio-name">Грузчики</div>
+          <div class="portfolio-desc">Переезды, погрузка, разгрузка. Быстро и аккуратно — ваши вещи в надёжных руках.</div>
+        </div>
+      </div>
+      <div class="portfolio-card" style="animation-delay:0.1s">
+        <div class="portfolio-bg" style="background-image:url('img/portfolio-2.jpg');background-size:cover;background-position:center"></div>
+        <div class="portfolio-content">
+          <div class="portfolio-emoji">🔨</div>
+          <div class="portfolio-name">Ремонт и отделка</div>
+          <div class="portfolio-desc">Покраска, шпаклёвка, поклейка обоев. Профессиональный ремонт под ключ.</div>
+        </div>
+      </div>
+      <div class="portfolio-card" style="animation-delay:0.2s">
+        <div class="portfolio-bg" style="background-image:url('img/portfolio-3.jpg');background-size:cover;background-position:center"></div>
+        <div class="portfolio-content">
+          <div class="portfolio-emoji">🏗️</div>
+          <div class="portfolio-name">Тяжёлые работы</div>
+          <div class="portfolio-desc">Работа с техникой, погрузка труб, стройматериалов. Опытные бригады для сложных задач.</div>
+        </div>
+      </div>
+      <div class="portfolio-card" style="animation-delay:0.3s">
+        <div class="portfolio-bg" style="background-image:url('img/portfolio-4.jpg');background-size:cover;background-position:center"></div>
+        <div class="portfolio-content">
+          <div class="portfolio-emoji">👷</div>
+          <div class="portfolio-name">Строительство</div>
+          <div class="portfolio-desc">Бетонные работы, кладка, фундаменты. Полноценные бригады строителей.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="reception-cta">
+    <div class="reception-section-title">📞 Остались вопросы?</div>
+    <p style="color:var(--muted);margin-bottom:20px;font-size:15px">Свяжитесь с нами — мы всегда на связи</p>
+    <a href="#order" class="hero-btn" onclick="document.getElementById('reception').classList.add('hidden');document.getElementById('form-card').style.display='block'">📝 Оставить ещё одну заявку</a>
   </div>
 </section>
 
@@ -399,10 +552,11 @@ async function submitOrder() {
     const data = await res.json();
 
     if (data.success || data.orderId) {
-      msgEl.className = 'form-msg success';
-      msgEl.textContent = '✅ Заявка №' + data.orderId + ' принята! Мы перезвоним в течение 15 минут.';
-      msgEl.style.display = 'block';
-      // Очищаем форму
+      // Скрываем форму, показываем ресепшн
+      document.getElementById('form-card').style.display = 'none';
+      document.getElementById('reception').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Очищаем форму на случай повторного использования
       ['f-name', 'f-phone', 'f-task', 'f-address'].forEach(id => document.getElementById(id).value = '');
     } else {
       throw new Error(data.error || 'Неизвестная ошибка');
