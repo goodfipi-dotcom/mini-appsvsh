@@ -8,553 +8,176 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:      #060810;
-  --surface: #0c0f1a;
-  --card:    rgba(255,255,255,0.04);
-  --border:  rgba(255,255,255,0.08);
-  --accent:  #38bdf8;
-  --gold:    #f59e0b;
-  --silver:  #94a3b8;
-  --bronze:  #cd7c3a;
-  --success: #10b981;
-  --danger:  #f87171;
-  --warn:    #fb923c;
-  --text:    #e2e8f0;
-  --muted:   #475569;
-}
+:root{--bg:#060810;--surface:#0c0f1a;--card:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);--accent:#38bdf8;--gold:#f59e0b;--silver:#94a3b8;--bronze:#cd7c3a;--success:#10b981;--danger:#f87171;--warn:#fb923c;--text:#e2e8f0;--muted:#475569;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden}
-body{
-  font-family:'Manrope',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-}
-body::before{
-  content:'';position:fixed;inset:0;z-index:0;
-  background-image:
-    linear-gradient(rgba(56,189,248,0.02) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(56,189,248,0.02) 1px,transparent 1px);
-  background-size:40px 40px;pointer-events:none;
-}
+body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(56,189,248,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,0.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
 .page{position:relative;z-index:1;min-height:100vh;padding-bottom:80px}
 .hidden{display:none!important}
-
-/* ── ANIMATIONS ── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes glow{0%,100%{box-shadow:0 0 20px rgba(56,189,248,.3)}50%{box-shadow:0 0 40px rgba(56,189,248,.6)}}
-@keyframes slideIn{from{transform:translateX(100%)}to{transform:none}}
-@keyframes countUp{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
-
-/* ── SPLASH ── */
-#splash{
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  min-height:100vh;gap:16px;
-}
-.splash-logo{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:72px;letter-spacing:4px;color:#fff;
-  animation:glow 2s infinite;
-}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes rankUp{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+#splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;}
+.splash-logo{font-family:'Bebas Neue',sans-serif;font-size:80px;letter-spacing:6px;color:#fff;animation:glow 2s infinite;}
 .splash-logo span{color:var(--accent)}
-.splash-sub{font-size:13px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
-.splash-loader{
-  width:40px;height:40px;border-radius:50%;
-  border:3px solid rgba(56,189,248,.2);
-  border-top-color:var(--accent);
-  animation:spin .8s linear infinite;
-  margin-top:8px;
-}
-
-/* ── AUTH ── */
-#auth-page{
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  min-height:100vh;padding:24px;
-}
-.auth-card{
-  width:100%;max-width:360px;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:24px;padding:36px 28px;
-  text-align:center;
-  animation:fadeUp .5s ease both;
-}
-.auth-icon{font-size:48px;margin-bottom:16px}
-.auth-title{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:32px;letter-spacing:2px;
-  color:#fff;margin-bottom:8px;
-}
+.splash-tagline{font-size:12px;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
+.splash-loader{width:40px;height:40px;border-radius:50%;border:3px solid rgba(56,189,248,.15);border-top-color:var(--accent);animation:spin .8s linear infinite;margin-top:8px;}
+#auth-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.auth-card{width:100%;max-width:340px;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:36px 24px;text-align:center;animation:fadeUp .5s ease both;}
+.auth-logo{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:3px;color:#fff;margin-bottom:4px;}
+.auth-logo span{color:var(--accent)}
 .auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.6}
-.pin-display{
-  display:flex;gap:12px;justify-content:center;
-  margin-bottom:24px;
-}
-.pin-dot{
-  width:16px;height:16px;border-radius:50%;
-  background:rgba(255,255,255,.1);
-  border:2px solid var(--border);
-  transition:all .2s;
-}
-.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
-.numpad{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  gap:10px;margin-bottom:16px;
-}
-.num-btn{
-  background:rgba(255,255,255,.06);
-  border:1px solid var(--border);
-  border-radius:14px;
-  padding:16px;
-  font-size:20px;font-weight:700;
-  color:#fff;cursor:pointer;
-  transition:all .15s;
-  font-family:'Manrope',sans-serif;
-}
-.num-btn:active{transform:scale(.94);background:rgba(56,189,248,.15)}
+.pin-display{display:flex;gap:14px;justify-content:center;margin-bottom:28px;}
+.pin-dot{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid var(--border);transition:all .2s;}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent);box-shadow:0 0 12px rgba(56,189,248,.5)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.num-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:14px;padding:16px;font-size:22px;font-weight:700;color:#fff;cursor:pointer;transition:all .15s;font-family:'Manrope',sans-serif;}
+.num-btn:active{transform:scale(.93);background:rgba(56,189,248,.2);border-color:var(--accent)}
 .num-btn.del{font-size:16px;color:var(--muted)}
-.auth-error{
-  color:var(--danger);font-size:13px;
-  margin-top:8px;display:none;
-  animation:fadeIn .3s ease;
-}
+.auth-error{color:var(--danger);font-size:13px;margin-top:8px;display:none;animation:shake .3s ease;}
 .auth-error.show{display:block}
-
-/* ── BOTTOM NAV ── */
-.bottom-nav{
-  position:fixed;bottom:0;left:0;right:0;z-index:100;
-  background:rgba(6,8,16,.92);
-  backdrop-filter:blur(20px);
-  border-top:1px solid var(--border);
-  display:flex;padding:8px 0 env(safe-area-inset-bottom,8px);
-}
-.nav-item{
-  flex:1;display:flex;flex-direction:column;
-  align-items:center;gap:4px;
-  padding:8px 4px;cursor:pointer;
-  transition:all .2s;color:var(--muted);
-}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(6,8,16,.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:8px 0 env(safe-area-inset-bottom,8px);}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;cursor:pointer;transition:all .2s;color:var(--muted);}
 .nav-item.active{color:var(--accent)}
 .nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
-.nav-label{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
-.nav-badge{
-  position:absolute;top:-4px;right:-4px;
-  background:var(--danger);color:#fff;
-  font-size:9px;font-weight:800;
-  width:16px;height:16px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-}
+.nav-label{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
 .nav-icon-wrap{position:relative}
-
-/* ── HEADER ── */
-.app-header{
-  padding:20px 20px 0;
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:20px;
-}
-.header-logo{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:28px;letter-spacing:2px;color:#fff;
-}
+.nav-badge{position:absolute;top:-5px;right:-8px;background:var(--danger);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+.app-header{padding:20px 16px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.header-logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#fff;}
 .header-logo span{color:var(--accent)}
-.worker-pill{
-  display:flex;align-items:center;gap:8px;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:100px;padding:6px 12px;
-}
-.worker-avatar{
-  width:28px;height:28px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),#6366f1);
-  display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:800;color:#fff;
-}
-.worker-rank-badge{font-size:11px;font-weight:700;color:var(--accent)}
-
-/* ── CARDS ── */
-.card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;padding:18px;
-  margin-bottom:12px;
-}
-.section-title{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:20px;letter-spacing:1px;
-  color:#fff;margin-bottom:14px;
-}
-
-/* ── FEED PAGE ── */
-#feed-page .container{padding:0 16px}
-.order-card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:18px;padding:18px;
-  margin-bottom:12px;
-  animation:fadeUp .4s ease both;
-  position:relative;overflow:hidden;
-}
-.order-card::before{
-  content:'';
-  position:absolute;left:0;top:0;bottom:0;
-  width:3px;background:var(--accent);
-  border-radius:2px;
-}
-.order-card.urgent::before{background:var(--warn);animation:pulse 1s infinite}
-.order-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
-.order-city{
-  font-size:10px;font-weight:700;
-  text-transform:uppercase;letter-spacing:1px;
-  color:var(--accent);margin-bottom:4px;
-}
-.order-title{font-size:16px;font-weight:700;color:#fff;line-height:1.3}
-.order-time{
-  font-size:11px;color:var(--muted);
-  background:rgba(255,255,255,.05);
-  border-radius:8px;padding:4px 8px;
-  white-space:nowrap;
-}
-.order-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.meta-tag{
-  display:flex;align-items:center;gap:5px;
-  background:rgba(255,255,255,.05);
-  border-radius:8px;padding:5px 10px;
-  font-size:12px;font-weight:600;color:var(--text);
-}
-.meta-tag .icon{font-size:13px}
-.order-pay{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:26px;letter-spacing:1px;
-  color:var(--success);margin-bottom:14px;
-}
-.order-pay span{font-size:14px;color:var(--muted);font-family:'Manrope',sans-serif;font-weight:500}
-.phone-hidden{
-  display:flex;align-items:center;gap:8px;
-  background:rgba(56,189,248,.08);
-  border:1px solid rgba(56,189,248,.2);
-  border-radius:10px;padding:10px 14px;
-  font-size:13px;color:var(--accent);font-weight:600;
-  margin-bottom:14px;
-}
-.btn{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  border:none;border-radius:12px;
-  padding:14px;width:100%;
-  font-family:'Manrope',sans-serif;
-  font-size:14px;font-weight:800;
-  cursor:pointer;transition:all .15s;
-  letter-spacing:.5px;
-}
+.worker-chip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:100px;padding:6px 12px;}
+.chip-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0;}
+.chip-rank{font-size:11px;font-weight:700;color:var(--accent);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:12px;}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:#fff;margin-bottom:14px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:12px;padding:14px;width:100%;font-family:'Manrope',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:all .15s;letter-spacing:.5px;}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--accent);color:#060810}
-.btn-primary:hover{background:#7dd3fc}
 .btn-outline{background:transparent;border:1px solid var(--accent);color:var(--accent)}
 .btn-success{background:var(--success);color:#fff}
-.btn-danger{background:rgba(248,113,113,.15);color:var(--danger);border:1px solid rgba(248,113,113,.3)}
+.btn-danger{background:rgba(248,113,113,.12);color:var(--danger);border:1px solid rgba(248,113,113,.25)}
 .btn-sm{padding:10px 14px;font-size:13px;border-radius:10px}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-
-.empty-state{
-  text-align:center;padding:60px 20px;
-  animation:fadeIn .5s ease;
-}
-.empty-icon{font-size:48px;margin-bottom:16px;opacity:.5}
-.empty-title{font-size:16px;font-weight:700;color:var(--muted);margin-bottom:8px}
-.empty-sub{font-size:13px;color:var(--muted);opacity:.7}
-
-/* ── PROFILE PAGE ── */
-#profile-page .container{padding:0 16px}
-.profile-hero{
-  background:linear-gradient(135deg,rgba(56,189,248,.1),rgba(99,102,241,.1));
-  border:1px solid rgba(56,189,248,.2);
-  border-radius:20px;padding:24px;
-  text-align:center;margin-bottom:16px;
-  animation:fadeUp .4s ease both;
-}
-.profile-avatar{
-  width:72px;height:72px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),#6366f1);
-  display:flex;align-items:center;justify-content:center;
-  font-size:28px;font-weight:800;color:#fff;
-  margin:0 auto 12px;
-  box-shadow:0 0 0 4px rgba(56,189,248,.2);
-}
-.profile-name{font-size:20px;font-weight:800;color:#fff;margin-bottom:4px}
-.profile-rank{
-  display:inline-flex;align-items:center;gap:6px;
-  background:rgba(245,158,11,.1);
-  border:1px solid rgba(245,158,11,.3);
-  border-radius:100px;padding:4px 12px;
-  font-size:12px;font-weight:700;color:var(--gold);
-  margin-bottom:16px;
-}
-.progress-wrap{margin-bottom:8px}
-.progress-label{
-  display:flex;justify-content:space-between;
-  font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;
-}
-.progress-bar{
-  height:6px;background:rgba(255,255,255,.08);
-  border-radius:100px;overflow:hidden;
-}
-.progress-fill{
-  height:100%;background:linear-gradient(90deg,var(--accent),#6366f1);
-  border-radius:100px;transition:width .8s ease;
-}
-.stats-row{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  gap:10px;margin-top:16px;
-}
-.stat-box{
-  background:rgba(255,255,255,.04);
-  border-radius:12px;padding:12px 8px;text-align:center;
-}
-.stat-val{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:24px;color:var(--accent);letter-spacing:1px;
-}
-.stat-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-
-.badges-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
-.badge-chip{
-  display:flex;align-items:center;gap:5px;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--border);
-  border-radius:8px;padding:5px 10px;
-  font-size:11px;font-weight:700;color:var(--text);
-}
-.badge-chip.earned{
-  background:rgba(245,158,11,.1);
-  border-color:rgba(245,158,11,.3);
-  color:var(--gold);
-}
-
-/* ── LEADERBOARD PAGE ── */
-#leaderboard-page .container{padding:0 16px}
-.lb-header{
-  background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(56,189,248,.05));
-  border:1px solid rgba(245,158,11,.2);
-  border-radius:20px;padding:20px;
-  text-align:center;margin-bottom:16px;
-  animation:fadeUp .4s ease both;
-}
-.lb-title{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:28px;letter-spacing:2px;color:#fff;
-}
-.lb-sub{font-size:12px;color:var(--muted);margin-top:4px}
-.lb-item{
-  display:flex;align-items:center;gap:14px;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:14px;padding:14px 16px;
-  margin-bottom:8px;
-  animation:fadeUp .4s ease both;
-  transition:border-color .2s;
-}
-.lb-item.me{border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.05)}
-.lb-item.top1{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.05)}
-.lb-pos{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:20px;width:28px;text-align:center;
-}
-.lb-pos.gold{color:var(--gold)}
-.lb-pos.silver{color:var(--silver)}
-.lb-pos.bronze{color:var(--bronze)}
-.lb-avatar{
-  width:40px;height:40px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),#6366f1);
-  display:flex;align-items:center;justify-content:center;
-  font-size:16px;font-weight:800;color:#fff;flex-shrink:0;
-}
-.lb-info{flex:1}
-.lb-name{font-size:14px;font-weight:700;color:#fff}
-.lb-rank-tag{font-size:11px;color:var(--muted);margin-top:2px}
-.lb-score{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:22px;color:var(--gold);letter-spacing:1px;
-}
-
-/* ── ADMIN PAGE ── */
-#admin-page .container{padding:0 16px}
-.admin-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  background:rgba(245,158,11,.1);
-  border:1px solid rgba(245,158,11,.3);
-  border-radius:100px;padding:4px 12px;
-  font-size:11px;font-weight:700;color:var(--gold);
-  margin-bottom:16px;
-}
-.input{
-  width:100%;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--border);
-  border-radius:12px;padding:13px 16px;
-  color:var(--text);
-  font-family:'Manrope',sans-serif;
-  font-size:15px;font-weight:500;
-  outline:none;
-  transition:border-color .2s;
-  margin-bottom:10px;
-}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Manrope',sans-serif;font-size:15px;font-weight:500;outline:none;transition:border-color .2s;margin-bottom:10px;}
 .input:focus{border-color:rgba(56,189,248,.5)}
 .input::placeholder{color:var(--muted);font-size:14px}
 textarea.input{height:80px;resize:none}
-.input-label{
-  font-size:11px;font-weight:700;
-  text-transform:uppercase;letter-spacing:1px;
-  color:var(--muted);margin-bottom:6px;display:block;
-}
-.city-tabs{display:flex;gap:8px;margin-bottom:16px}
-.city-tab{
-  flex:1;padding:10px;border-radius:10px;
-  background:rgba(255,255,255,.05);
-  border:1px solid var(--border);
-  font-size:13px;font-weight:700;
-  color:var(--muted);cursor:pointer;
-  text-align:center;transition:all .2s;
-}
-.city-tab.active{background:rgba(56,189,248,.15);border-color:var(--accent);color:var(--accent)}
-
-/* ── TOAST ── */
-.toast{
-  position:fixed;top:20px;left:50%;
-  transform:translateX(-50%) translateY(-80px);
-  background:#1e293b;border:1px solid var(--border);
-  border-radius:12px;padding:12px 20px;
-  font-size:14px;font-weight:600;color:#fff;
-  z-index:999;transition:transform .3s ease;
-  white-space:nowrap;
-  box-shadow:0 8px 32px rgba(0,0,0,.4);
-}
+.input-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;display:block;}
+.order-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:12px;animation:fadeUp .4s ease both;position:relative;overflow:hidden;}
+.order-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:2px;}
+.order-card.urgent::before{background:var(--warn);animation:pulse 1s infinite}
+.order-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.order-city{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:3px;}
+.order-city.urgent-tag{color:var(--warn)}
+.order-title{font-size:16px;font-weight:700;color:#fff;line-height:1.3}
+.order-time{font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border-radius:8px;padding:4px 8px;white-space:nowrap;}
+.order-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.meta-tag{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.05);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--text);}
+.order-phone-lock{display:flex;align-items:center;gap:8px;background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.15);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px;}
+.empty-state{text-align:center;padding:60px 20px;animation:fadeIn .5s ease;}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.4}
+.empty-title{font-size:15px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.empty-sub{font-size:13px;color:var(--muted);opacity:.6}
+.profile-hero{background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(99,102,241,.08));border:1px solid rgba(56,189,248,.15);border-radius:20px;padding:24px;text-align:center;margin-bottom:12px;animation:fadeUp .4s ease both;}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;margin:0 auto 12px;box-shadow:0 0 0 4px rgba(56,189,248,.2);}
+.profile-name{font-size:20px;font-weight:800;color:#fff;margin-bottom:6px}
+.rank-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:100px;padding:5px 14px;font-size:13px;font-weight:700;color:var(--gold);margin-bottom:16px;}
+.progress-wrap{margin-bottom:4px}
+.progress-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+.progress-bar{height:6px;background:rgba(255,255,255,.07);border-radius:100px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#818cf8);border-radius:100px;transition:width 1s ease;}
+.progress-hint{font-size:11px;color:var(--muted);margin-top:5px;text-align:right}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
+.stat-box{background:rgba(255,255,255,.04);border-radius:12px;padding:12px 8px;text-align:center;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);letter-spacing:1px;}
+.stat-lbl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ach-item{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;transition:all .2s;}
+.ach-item.earned{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);}
+.ach-icon{font-size:28px;margin-bottom:8px;filter:grayscale(1);opacity:.4;transition:all .3s;}
+.ach-item.earned .ach-icon{filter:none;opacity:1;}
+.ach-name{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;}
+.ach-item.earned .ach-name{color:#fff;}
+.ach-desc{font-size:11px;color:var(--muted);line-height:1.4;}
+.ach-item.earned .ach-desc{color:var(--gold);}
+.lb-header-card{background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(56,189,248,.05));border:1px solid rgba(245,158,11,.2);border-radius:20px;padding:20px;text-align:center;margin-bottom:14px;}
+.lb-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:#fff;}
+.lb-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.lb-item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 15px;margin-bottom:8px;animation:fadeUp .4s ease both;}
+.lb-item.me{border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.05)}
+.lb-item.top1{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.05)}
+.lb-pos{font-family:'Bebas Neue',sans-serif;font-size:20px;width:26px;text-align:center;flex-shrink:0;}
+.pos-gold{color:var(--gold)}.pos-silver{color:var(--silver)}.pos-bronze{color:var(--bronze)}
+.lb-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-rank-tag{font-size:11px;color:var(--muted);margin-top:2px}
+.lb-score{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);}
+.admin-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:100px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--gold);}
+.city-tabs{display:flex;gap:8px;margin-bottom:14px}
+.city-tab{flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;text-align:center;transition:all .2s;}
+.city-tab.active{background:rgba(56,189,248,.12);border-color:var(--accent);color:var(--accent)}
+.worker-list-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.worker-list-item:last-child{border-bottom:none}
+.wli-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;}
+.wli-info{flex:1}.wli-name{font-size:14px;font-weight:700;color:#fff}.wli-rank{font-size:11px;color:var(--muted)}
+.wli-score{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold)}
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:flex-end;animation:fadeIn .2s ease;}
+.modal-sheet{width:100%;background:#0d1117;border:1px solid var(--border);border-radius:24px 24px 0 0;padding:20px 20px env(safe-area-inset-bottom,20px);animation:slideUp .3s ease;max-height:90vh;overflow-y:auto;}
+.modal-handle{width:40px;height:4px;background:rgba(255,255,255,.12);border-radius:100px;margin:0 auto 20px;}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:#fff;margin-bottom:14px;}
+.timer-wrap{display:flex;flex-direction:column;align-items:center;padding:16px 0;margin-bottom:16px;}
+.timer-circle{position:relative;width:90px;height:90px;}
+.timer-svg{transform:rotate(-90deg);width:90px;height:90px;}
+.timer-track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:6;}
+.timer-progress{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;stroke-dasharray:240;transition:stroke-dashoffset .9s linear,stroke .5s;}
+.timer-progress.urgent{stroke:var(--warn)}
+.timer-progress.critical{stroke:var(--danger)}
+.timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:26px;color:#fff;letter-spacing:1px;}
+.timer-label{font-size:12px;color:var(--muted);margin-top:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;}
+.rules-list{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.rule-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text);line-height:1.5;}
+.rule-num{width:22px;height:22px;border-radius:50%;background:rgba(56,189,248,.12);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.rule-danger{color:var(--danger)!important;background:rgba(248,113,113,.12)!important;}
+.phone-reveal-box{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:16px;padding:20px;text-align:center;margin-bottom:14px;}
+.phone-reveal-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:700;}
+.phone-reveal-num{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:4px;color:var(--success);}
+.star-row{display:flex;gap:10px;justify-content:center;margin:14px 0;}
+.star-btn{font-size:30px;cursor:pointer;transition:all .2s;opacity:.3;filter:grayscale(1);}
+.star-btn.active{opacity:1;filter:none;transform:scale(1.15);}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:#1e293b;border:1px solid var(--border);border-radius:12px;padding:12px 20px;font-size:14px;font-weight:600;color:#fff;z-index:999;transition:transform .3s ease;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.5);}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.success{border-color:rgba(16,185,129,.4);color:var(--success)}
 .toast.error{border-color:rgba(248,113,113,.4);color:var(--danger)}
-
-/* ── MODAL ── */
-.modal-overlay{
-  position:fixed;inset:0;z-index:200;
-  background:rgba(0,0,0,.7);
-  backdrop-filter:blur(8px);
-  display:flex;align-items:flex-end;
-  animation:fadeIn .2s ease;
-}
-.modal-sheet{
-  width:100%;background:var(--surface);
-  border-radius:24px 24px 0 0;
-  padding:24px 20px env(safe-area-inset-bottom,20px);
-  animation:slideIn .3s ease;
-  max-height:85vh;overflow-y:auto;
-}
-.modal-handle{
-  width:40px;height:4px;background:rgba(255,255,255,.15);
-  border-radius:100px;margin:0 auto 20px;
-}
-.modal-title{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:24px;letter-spacing:1px;color:#fff;
-  margin-bottom:16px;
-}
-.phone-reveal{
-  background:rgba(16,185,129,.1);
-  border:1px solid rgba(16,185,129,.3);
-  border-radius:14px;padding:16px;
-  text-align:center;margin-bottom:16px;
-}
-.phone-reveal-label{font-size:12px;color:var(--muted);margin-bottom:6px}
-.phone-reveal-num{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:32px;letter-spacing:3px;color:var(--success);
-}
-.rules-list{
-  display:flex;flex-direction:column;gap:10px;
-  margin-bottom:20px;
-}
-.rule-item{
-  display:flex;align-items:flex-start;gap:10px;
-  font-size:13px;color:var(--text);line-height:1.5;
-}
-.rule-num{
-  width:22px;height:22px;border-radius:50%;
-  background:rgba(56,189,248,.15);
-  color:var(--accent);font-size:11px;font-weight:800;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;margin-top:1px;
-}
-.confirm-input-wrap{margin-bottom:16px}
-.confirm-hint{font-size:13px;color:var(--muted);margin-bottom:8px}
-.confirm-hint b{color:var(--accent)}
-
-/* ── RATE WORKER MODAL ── */
-.worker-list-item{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 0;border-bottom:1px solid var(--border);
-  cursor:pointer;transition:opacity .2s;
-}
-.worker-list-item:last-child{border-bottom:none}
-.worker-list-item:active{opacity:.7}
-.wli-avatar{
-  width:40px;height:40px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),#6366f1);
-  display:flex;align-items:center;justify-content:center;
-  font-size:16px;font-weight:800;color:#fff;flex-shrink:0;
-}
-.wli-info{flex:1}
-.wli-name{font-size:14px;font-weight:700;color:#fff}
-.wli-rank{font-size:11px;color:var(--muted)}
-.wli-score{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold)}
-.star-row{display:flex;gap:8px;justify-content:center;margin:16px 0}
-.star-btn{
-  font-size:28px;cursor:pointer;
-  transition:transform .2s;opacity:.4;
-}
-.star-btn.active{opacity:1;transform:scale(1.2)}
-
-/* ── HISTORY ── */
-.history-item{
-  display:flex;align-items:center;gap:12px;
-  padding:12px 0;border-bottom:1px solid var(--border);
-}
-.history-item:last-child{border-bottom:none}
-.hist-icon{
-  width:36px;height:36px;border-radius:10px;
-  background:rgba(16,185,129,.1);
-  display:flex;align-items:center;justify-content:center;
-  font-size:16px;flex-shrink:0;
-}
-.hist-info{flex:1}
-.hist-title{font-size:13px;font-weight:700;color:#fff}
-.hist-date{font-size:11px;color:var(--muted);margin-top:2px}
-.hist-pay{font-size:14px;font-weight:800;color:var(--success)}
+.toast.warn{border-color:rgba(251,146,60,.4);color:var(--warn)}
+.rankup-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease;}
+.rankup-card{background:linear-gradient(135deg,#0f172a,#1e1b4b);border:2px solid var(--gold);border-radius:24px;padding:40px 32px;text-align:center;max-width:300px;animation:fadeUp .4s ease both;}
+.rankup-icon{font-size:64px;margin-bottom:16px;animation:rankUp 1s ease infinite;}
+.rankup-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;color:var(--gold);margin-bottom:8px;}
+.rankup-rank{font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;margin-bottom:16px;}
 </style>
 </head>
 <body>
-
-<!-- SPLASH -->
 <div id="splash" class="page">
   <div class="splash-logo">VSH<span>.</span></div>
-  <div class="splash-sub">Октябрьский · Туймазы</div>
+  <div class="splash-tagline">Октябрьский · Туймазы · Работа есть</div>
   <div class="splash-loader"></div>
 </div>
-
-<!-- AUTH -->
 <div id="auth-page" class="page hidden">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px">
     <div class="auth-card">
-      <div class="auth-icon">🔐</div>
-      <div class="auth-title">Вход для рабочих</div>
-      <div class="auth-sub">Введите PIN-код бригады для доступа к заявкам</div>
+      <div class="auth-logo">VSH<span>.</span></div>
+      <div class="auth-sub">Введите PIN-код для входа в систему бригад</div>
       <div class="pin-display">
-        <div class="pin-dot" id="dot-0"></div>
-        <div class="pin-dot" id="dot-1"></div>
-        <div class="pin-dot" id="dot-2"></div>
-        <div class="pin-dot" id="dot-3"></div>
+        <div class="pin-dot" id="dot-0"></div><div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div><div class="pin-dot" id="dot-3"></div>
       </div>
       <div class="numpad">
         <button class="num-btn" onclick="pinInput('1')">1</button>
@@ -566,819 +189,275 @@ textarea.input{height:80px;resize:none}
         <button class="num-btn" onclick="pinInput('7')">7</button>
         <button class="num-btn" onclick="pinInput('8')">8</button>
         <button class="num-btn" onclick="pinInput('9')">9</button>
-        <button class="num-btn" onclick="pinInput('')" style="opacity:.3"></button>
+        <button class="num-btn" style="opacity:.2" onclick="void(0)"></button>
         <button class="num-btn" onclick="pinInput('0')">0</button>
-        <button class="num-btn del" onclick="pinDelete()">⌫</button>
+        <button class="num-btn del" onclick="pinDelete()">&#x232B;</button>
       </div>
-      <div class="auth-error" id="auth-error">❌ Неверный PIN-код</div>
+      <div class="auth-error" id="auth-error">&#x274C; Неверный PIN-код</div>
     </div>
   </div>
 </div>
-
-<!-- MAIN APP -->
 <div id="app" class="hidden">
-
-  <!-- FEED PAGE -->
   <div id="feed-page" class="page">
     <div class="app-header">
       <div class="header-logo">VSH<span>.</span></div>
-      <div class="worker-pill">
-        <div class="worker-avatar" id="header-avatar">?</div>
-        <div class="worker-rank-badge" id="header-rank">—</div>
+      <div class="worker-chip">
+        <div class="chip-avatar" id="header-avatar">?</div>
+        <div class="chip-rank" id="header-rank">—</div>
       </div>
     </div>
-    <div class="container" style="padding:0 16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="padding:0 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div class="section-title" style="margin:0">Активные заявки</div>
-        <button class="btn btn-outline btn-sm" style="width:auto;padding:8px 14px" onclick="loadOrders()">
-          <svg width="14" height="14" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        <button class="btn btn-outline btn-sm" style="width:auto;gap:6px" onclick="loadOrders()">
+          <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
           Обновить
         </button>
       </div>
       <div id="orders-list"></div>
     </div>
   </div>
-
-  <!-- PROFILE PAGE -->
   <div id="profile-page" class="page hidden">
     <div class="app-header">
       <div class="header-logo">VSH<span>.</span></div>
-      <div style="font-size:12px;color:var(--muted);font-weight:600">МОЙ ПРОФИЛЬ</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px">МОЙ ПРОФИЛЬ</div>
     </div>
-    <div class="container" style="padding:0 16px">
-
+    <div style="padding:0 16px">
       <div class="profile-hero">
         <div class="profile-avatar" id="profile-avatar">?</div>
-        <div class="profile-name" id="profile-name">Загрузка...</div>
-        <div class="profile-rank" id="profile-rank-badge">🔩 Новобранец</div>
+        <div class="profile-name" id="profile-name">—</div>
+        <div class="rank-pill" id="profile-rank-pill">&#x1F529; Новобранец</div>
         <div class="progress-wrap">
-          <div class="progress-label">
-            <span id="progress-cur-rank">Новобранец</span>
-            <span id="progress-next-rank">Рабочий →</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" id="progress-fill" style="width:0%"></div>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;text-align:right" id="progress-label-txt"></div>
+          <div class="progress-labels"><span id="prog-cur">Новобранец</span><span id="prog-next">Подмастерье →</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+          <div class="progress-hint" id="prog-hint"></div>
         </div>
-        <div class="stats-row">
-          <div class="stat-box">
-            <div class="stat-val" id="stat-orders">0</div>
-            <div class="stat-lbl">Заявок</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-val" id="stat-stars">0⭐</div>
-            <div class="stat-lbl">Звёзд</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-val" id="stat-level-num">#—</div>
-            <div class="stat-lbl">Место</div>
-          </div>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="stat-val" id="s-orders">0</div><div class="stat-lbl">Заявок</div></div>
+          <div class="stat-box"><div class="stat-val" id="s-stars">0&#x2B50;</div><div class="stat-lbl">Звёзд</div></div>
+          <div class="stat-box"><div class="stat-val" id="s-place">#—</div><div class="stat-lbl">Место</div></div>
         </div>
       </div>
-
+      <div class="card"><div class="section-title">&#x1F3C5; Достижения</div><div class="ach-grid" id="ach-grid"></div></div>
       <div class="card">
-        <div class="section-title">Достижения</div>
-        <div class="badges-row" id="badges-row">
-          <div class="badge-chip">🔒 Первый заказ</div>
-          <div class="badge-chip">🔒 10 заказов</div>
-          <div class="badge-chip">🔒 Топ-3</div>
-          <div class="badge-chip">🔒 Месяц в системе</div>
-        </div>
+        <div class="section-title">&#x1F4CB; История заказов</div>
+        <div id="history-list"><div class="empty-state" style="padding:16px 0"><div class="empty-icon" style="font-size:32px">&#x1F4ED;</div><div class="empty-title">Пока пусто</div><div class="empty-sub">Принятые заявки появятся здесь</div></div></div>
       </div>
-
-      <div class="card">
-        <div class="section-title">История заказов</div>
-        <div id="history-list">
-          <div class="empty-state" style="padding:20px 0">
-            <div class="empty-icon">📋</div>
-            <div class="empty-title">Пока пусто</div>
-          </div>
-        </div>
-      </div>
-
       <div class="card">
         <label class="input-label">Реквизиты для выплат</label>
-        <input type="text" class="input" id="bank-details" placeholder="Номер карты или СБП">
-        <button class="btn btn-outline btn-sm" onclick="saveDetails()">Сохранить реквизиты</button>
+        <input type="text" class="input" id="bank-details" placeholder="Номер карты или СБП номер">
+        <button class="btn btn-outline btn-sm" onclick="saveDetails()">&#x1F4BE; Сохранить реквизиты</button>
       </div>
-
       <button class="btn btn-danger" style="margin-top:4px" onclick="logout()">Выйти из системы</button>
     </div>
   </div>
-
-  <!-- LEADERBOARD PAGE -->
   <div id="leaderboard-page" class="page hidden">
     <div class="app-header">
       <div class="header-logo">VSH<span>.</span></div>
-      <div style="font-size:12px;color:var(--muted);font-weight:600">РЕЙТИНГ</div>
+      <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px">РЕЙТИНГ</div>
     </div>
-    <div class="container" style="padding:0 16px">
-      <div class="lb-header">
-        <div class="lb-title">🏆 Таблица лидеров</div>
-        <div class="lb-sub">Соревнуйся с другими рабочими · Обновляется в реальном времени</div>
-      </div>
-      <div id="leaderboard-list"></div>
+    <div style="padding:0 16px">
+      <div class="lb-header-card"><div class="lb-title">&#x1F3C6; Таблица лидеров</div><div class="lb-sub">Соревнуйся · Расти · Становись лучшим</div></div>
+      <div id="lb-list"></div>
     </div>
   </div>
-
-  <!-- ADMIN PAGE -->
   <div id="admin-page" class="page hidden">
     <div class="app-header">
       <div class="header-logo">VSH<span>.</span></div>
-      <div class="admin-badge">👑 Администратор</div>
+      <div class="admin-badge">&#x1F451; Администратор</div>
     </div>
-    <div class="container" style="padding:0 16px">
-
-      <!-- Публикация заявки -->
-      <div class="card" id="admin-form-card">
-        <div class="section-title">Новая заявка</div>
-        <div style="margin-bottom:8px">
-          <label class="input-label">Город</label>
-          <div class="city-tabs">
-            <div class="city-tab active" onclick="selectCity(this,'Октябрьский')" id="city-okt">Октябрьский</div>
-            <div class="city-tab" onclick="selectCity(this,'Туймазы')" id="city-tuy">Туймазы</div>
-          </div>
+    <div style="padding:0 16px">
+      <div class="card" id="admin-form">
+        <div class="section-title">&#x1F4E2; Новая заявка</div>
+        <label class="input-label">Город</label>
+        <div class="city-tabs">
+          <div class="city-tab active" onclick="selectCity(this,'Октябрьский')">Октябрьский</div>
+          <div class="city-tab" onclick="selectCity(this,'Туймазы')">Туймазы</div>
         </div>
-        <label class="input-label">Задача</label>
-        <input type="text" class="input" id="admin-task" placeholder="Что нужно сделать?">
-        <label class="input-label">Адрес</label>
-        <input type="text" class="input" id="admin-address" placeholder="Улица, дом">
-        <label class="input-label">Телефон заказчика</label>
-        <input type="tel" class="input" id="admin-phone" placeholder="+7 (___) ___-__-__">
+        <label class="input-label">Задача *</label>
+        <input type="text" class="input" id="a-task" placeholder="Что нужно сделать?">
+        <label class="input-label">Адрес *</label>
+        <input type="text" class="input" id="a-address" placeholder="Улица, дом">
+        <label class="input-label">Телефон заказчика *</label>
+        <input type="tel" class="input" id="a-phone" placeholder="+7 (___) ___-__-__">
         <label class="input-label">Доп. условия</label>
-        <textarea class="input" id="admin-comment" placeholder="Время, инструменты, особенности..."></textarea>
+        <textarea class="input" id="a-comment" placeholder="Время, инструменты, особенности..."></textarea>
         <label class="input-label">Кол-во рабочих</label>
-        <input type="number" class="input" id="admin-workers" value="1" min="1" max="10">
-        <button class="btn btn-primary" id="btn-publish" onclick="publishOrder()">
-          📢 Опубликовать заявку
-        </button>
+        <input type="number" class="input" id="a-workers" value="1" min="1" max="20">
+        <button class="btn btn-primary" id="btn-pub" onclick="publishOrder()">&#x1F4E2; Опубликовать заявку</button>
       </div>
-
-      <div class="card hidden" id="admin-success-card" style="text-align:center;padding:32px">
-        <div style="font-size:48px;margin-bottom:12px">✅</div>
+      <div class="card hidden" id="admin-ok" style="text-align:center;padding:32px">
+        <div style="font-size:56px;margin-bottom:12px">&#x2705;</div>
         <div class="section-title">Заявка опубликована!</div>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Рабочие получили уведомление в Telegram</p>
-        <button class="btn btn-outline" onclick="resetAdminForm()">Создать ещё</button>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Рабочие получат уведомление в Telegram</p>
+        <button class="btn btn-outline" onclick="resetAdmin()">Создать ещё</button>
       </div>
-
-      <!-- Выдача звёзд -->
       <div class="card">
-        <div class="section-title">⭐ Выдать звёзды рабочему</div>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Выберите рабочего и поставьте оценку за выполненный заказ</p>
-        <div id="admin-workers-list"></div>
+        <div class="section-title">&#x2B50; Выдать звёзды</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Оцените работу исполнителя</p>
+        <div id="admin-wlist"></div>
       </div>
-
     </div>
   </div>
-
-  <!-- BOTTOM NAV -->
   <nav class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('feed')" id="nav-feed">
       <div class="nav-icon-wrap">
-        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         <div class="nav-badge hidden" id="orders-badge">0</div>
       </div>
       <span class="nav-label">Заявки</span>
     </div>
     <div class="nav-item" onclick="switchTab('leaderboard')" id="nav-leaderboard">
-      <div class="nav-icon-wrap">
-        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      </div>
+      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
       <span class="nav-label">Рейтинг</span>
     </div>
     <div class="nav-item" onclick="switchTab('profile')" id="nav-profile">
-      <div class="nav-icon-wrap">
-        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      </div>
+      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
       <span class="nav-label">Профиль</span>
     </div>
     <div class="nav-item hidden" onclick="switchTab('admin')" id="nav-admin">
-      <div class="nav-icon-wrap">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M20 12h-2M6 12H4M19.07 19.07l-1.41-1.41M5.34 5.34L3.93 3.93"/></svg>
-      </div>
+      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
       <span class="nav-label">Админ</span>
     </div>
   </nav>
 </div>
-
-<!-- MODALS -->
-<div id="accept-modal" class="modal-overlay hidden">
+<div id="modal-rules" class="modal-overlay hidden">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">Принять заявку</div>
-    <div id="modal-order-info" style="margin-bottom:16px"></div>
+    <div class="modal-title">&#x26A0;&#xFE0F; Правила бригады</div>
+    <div class="timer-wrap">
+      <div class="timer-circle">
+        <svg class="timer-svg" viewBox="0 0 90 90">
+          <circle class="timer-track" cx="45" cy="45" r="38"/>
+          <circle class="timer-progress" id="rules-progress" cx="45" cy="45" r="38" stroke-dasharray="240" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-num" id="rules-timer">30</div>
+      </div>
+      <div class="timer-label">Прочитайте внимательно</div>
+    </div>
     <div class="rules-list">
-      <div class="rule-item"><div class="rule-num">1</div><div>Прибыть на место вовремя, желательно на 10 минут раньше</div></div>
-      <div class="rule-item"><div class="rule-num">2</div><div>Работать профессионально — репутация бригады важна</div></div>
-      <div class="rule-item"><div class="rule-num">3</div><div>После выполнения — сообщить администратору</div></div>
-      <div class="rule-item" style="color:var(--danger)"><div class="rule-num" style="background:rgba(248,113,113,.15);color:var(--danger)">!</div><div>Нарушение правил = блокировка аккаунта</div></div>
+      <div class="rule-item"><div class="rule-num">1</div><div>Явка на заявку <b>обязательна</b>. Принял — значит едешь.</div></div>
+      <div class="rule-item"><div class="rule-num">2</div><div>Прибыть на место не позже указанного времени.</div></div>
+      <div class="rule-item"><div class="rule-num">3</div><div>Вести себя профессионально, трезво и вежливо.</div></div>
+      <div class="rule-item"><div class="rule-num">4</div><div>После выполнения — подтвердить завершение в приложении.</div></div>
+      <div class="rule-item"><div class="rule-num rule-danger">!</div><div style="color:var(--danger)"><b>Не явился без предупреждения = бан навсегда.</b> Заказчик ждёт — не подставляй команду.</div></div>
     </div>
-    <div class="phone-hidden" id="modal-phone-hint">
-      🔒 Телефон заказчика откроется после подтверждения
-    </div>
-    <div class="confirm-input-wrap">
-      <div class="confirm-hint">Напишите <b>«подтверждаю»</b> для получения контакта:</div>
-      <input type="text" class="input" id="confirm-input" placeholder="подтверждаю...">
-    </div>
-    <button class="btn btn-primary" onclick="finalAccept()" id="btn-final-accept">✅ Подтвердить и получить контакт</button>
-    <button class="btn btn-danger" style="margin-top:8px" onclick="closeModal('accept-modal')">Отмена</button>
+    <button class="btn btn-primary" id="btn-rules-confirm" onclick="rulesConfirmed()" disabled>&#x2705; Ознакомлен, подтверждаю</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="closeModal('modal-rules')">Отмена</button>
   </div>
 </div>
-
-<div id="rate-modal" class="modal-overlay hidden">
+<div id="modal-call" class="modal-overlay hidden">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">⭐ Выдать звёзды</div>
-    <div id="rate-worker-info" style="margin-bottom:12px"></div>
-    <div class="star-row" id="star-row">
-      <div class="star-btn" onclick="selectStars(1)">⭐</div>
-      <div class="star-btn" onclick="selectStars(2)">⭐</div>
-      <div class="star-btn" onclick="selectStars(3)">⭐</div>
-      <div class="star-btn" onclick="selectStars(4)">⭐</div>
-      <div class="star-btn" onclick="selectStars(5)">⭐</div>
+    <div class="modal-title">&#x1F4DE; Свяжитесь с заказчиком</div>
+    <div id="modal-order-preview" style="margin-bottom:14px"></div>
+    <div class="phone-reveal-box">
+      <div class="phone-reveal-label">Телефон заказчика</div>
+      <div class="phone-reveal-num" id="reveal-phone">—</div>
     </div>
-    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px" id="stars-hint">Выберите количество звёзд</div>
-    <button class="btn btn-primary" onclick="giveStars()" id="btn-give-stars">Выдать звёзды</button>
-    <button class="btn btn-danger" style="margin-top:8px" onclick="closeModal('rate-modal')">Отмена</button>
+    <div class="timer-wrap">
+      <div class="timer-circle">
+        <svg class="timer-svg" viewBox="0 0 90 90">
+          <circle class="timer-track" cx="45" cy="45" r="38"/>
+          <circle class="timer-progress" id="call-progress" cx="45" cy="45" r="38" stroke-dasharray="240" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-num" id="call-timer">3:00</div>
+      </div>
+      <div class="timer-label">Время на договорённость</div>
+    </div>
+    <a id="btn-call-link" href="#" class="btn btn-success" style="text-decoration:none;margin-bottom:10px">&#x1F4DE; Позвонить заказчику</a>
+    <button class="btn btn-primary" id="btn-call-confirm" onclick="callConfirmed()">&#x2705; Договорился, еду на заказ!</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="callDeclined()">Отказаться от заявки</button>
   </div>
 </div>
-
+<div id="modal-stars" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">&#x2B50; Оценить рабочего</div>
+    <div id="rate-worker-info" style="margin-bottom:14px"></div>
+    <div class="star-row" id="star-row">
+      <div class="star-btn" onclick="selectStars(1)">&#x2B50;</div>
+      <div class="star-btn" onclick="selectStars(2)">&#x2B50;</div>
+      <div class="star-btn" onclick="selectStars(3)">&#x2B50;</div>
+      <div class="star-btn" onclick="selectStars(4)">&#x2B50;</div>
+      <div class="star-btn" onclick="selectStars(5)">&#x2B50;</div>
+    </div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px" id="stars-hint">Выберите оценку</div>
+    <button class="btn btn-primary" onclick="giveStars()">Выдать звёзды</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="closeModal('modal-stars')">Отмена</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
-
 <script>
-const tg = window.Telegram?.WebApp || null;
-if (tg) { tg.ready(); tg.expand(); }
-
-const API   = 'https://mini-appsvsh.vercel.app';
-const PIN   = '2026';
-const ADMIN = 7693616720;
-
-const RANKS = [
-  { name: '🔩 Новобранец',  min: 0,   max: 5  },
-  { name: '🔧 Рабочий',     min: 6,   max: 15 },
-  { name: '⚙️ Мастер',      min: 16,  max: 30 },
-  { name: '🏗️ Прораб',      min: 31,  max: 50 },
-  { name: '🏆 Бригадир',    min: 51,  max: 80 },
-  { name: '👑 Легенда',     min: 81,  max: Infinity },
+const tg=window.Telegram?.WebApp||null;
+if(tg){tg.ready();tg.expand();}
+const API='https://mini-appsvsh.vercel.app';
+const PIN='2026';
+const ADMIN_ID=7693616720;
+const RANKS=[
+  {name:'🔩 Новобранец',min:0,icon:'🔩'},
+  {name:'🪛 Подмастерье',min:3,icon:'🪛'},
+  {name:'🔧 Рабочий',min:7,icon:'🔧'},
+  {name:'⚙️ Механик',min:12,icon:'⚙️'},
+  {name:'🪚 Мастер',min:18,icon:'🪚'},
+  {name:'🏗️ Прораб',min:25,icon:'🏗️'},
+  {name:'👷 Бригадир',min:35,icon:'👷'},
+  {name:'🔱 Старший бригадир',min:50,icon:'🔱'},
+  {name:'🏆 Ветеран',min:70,icon:'🏆'},
+  {name:'💎 Элита',min:100,icon:'💎'},
+  {name:'🚀 Профессионал',min:150,icon:'🚀'},
+  {name:'🦅 Легенда',min:200,icon:'🦅'},
+  {name:'👑 Мастер-легенда',min:300,icon:'👑'},
+  {name:'⚡ Непобедимый',min:500,icon:'⚡'},
+  {name:'🌟 Основатель',min:1000,icon:'🌟'},
 ];
-
-let currentWorker = null;
-let selectedOrder = null;
-let selectedWorkerForRate = null;
-let selectedStars = 0;
-let selectedCity = 'Октябрьский';
-let pinCode = '';
-
-// ── UTILS ──
-function getRank(stars) {
-  return RANKS.find(r => stars >= r.min && stars <= r.max) || RANKS[0];
-}
-
-function getProgress(stars) {
-  const rank = getRank(stars);
-  if (rank.max === Infinity) return { pct: 100, cur: stars, needed: 0 };
-  const range = rank.max - rank.min + 1;
-  const done  = stars - rank.min;
-  return { pct: Math.round((done / range) * 100), cur: done, needed: rank.max - stars };
-}
-
-function getInitials(name) {
-  if (!name) return '?';
-  return name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-}
-
-function timeAgo(dateStr) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1)  return 'только что';
-  if (m < 60) return `${m} мин назад`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} ч назад`;
-  return `${Math.floor(h/24)} д назад`;
-}
-
-function showToast(msg, type = '') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast ${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
-}
-
-async function api(method, endpoint, body) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  try {
-    const r = await fetch(API + endpoint, opts);
-    return await r.json();
-  } catch(e) {
-    return { error: e.message };
-  }
-}
-
-// ── PIN AUTH ──
-function pinInput(digit) {
-  if (pinCode.length >= 4) return;
-  pinCode += digit;
-  updatePinDots();
-  if (pinCode.length === 4) checkPin();
-}
-
-function pinDelete() {
-  pinCode = pinCode.slice(0, -1);
-  updatePinDots();
-  document.getElementById('auth-error').classList.remove('show');
-}
-
-function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
-    document.getElementById(`dot-${i}`).classList.toggle('filled', i < pinCode.length);
-  }
-}
-
-async function checkPin() {
-  if (pinCode !== PIN) {
-    document.getElementById('auth-error').classList.add('show');
-    setTimeout(() => {
-      pinCode = '';
-      updatePinDots();
-      document.getElementById('auth-error').classList.remove('show');
-    }, 1200);
-    return;
-  }
-
-  const userId   = tg?.initDataUnsafe?.user?.id   || Date.now();
-  const userName = tg?.initDataUnsafe?.user?.first_name || 'Рабочий';
-
-  try {
-    const res = await api('POST', '/api/worker-auth', {
-      password: PIN, telegram_id: userId, first_name: userName
-    });
-    if (res.ok) {
-      currentWorker = res.worker;
-    } else {
-      currentWorker = { id: userId, name: userName, total_orders: 0, total_earnings: 0, stars: 0, bank_details: '' };
-    }
-  } catch {
-    currentWorker = { id: userId, name: userName, total_orders: 0, total_earnings: 0, stars: 0, bank_details: '' };
-  }
-
-  enterApp();
-}
-
-function enterApp() {
-  document.getElementById('auth-page').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-
-  // Показать кнопку админа
-  if (currentWorker.id == ADMIN || tg?.initDataUnsafe?.user?.id == ADMIN) {
-    document.getElementById('nav-admin').classList.remove('hidden');
-  }
-
-  updateHeaderUI();
-  loadOrders();
-}
-
-function logout() {
-  currentWorker = null;
-  pinCode = '';
-  updatePinDots();
-  document.getElementById('app').classList.add('hidden');
-  document.getElementById('auth-page').classList.remove('hidden');
-}
-
-// ── HEADER UI ──
-function updateHeaderUI() {
-  if (!currentWorker) return;
-  const rank = getRank(currentWorker.stars || 0);
-  const init = getInitials(currentWorker.name);
-  document.getElementById('header-avatar').textContent = init;
-  document.getElementById('header-rank').textContent   = rank.name;
-}
-
-// ── TABS ──
-function switchTab(tab) {
-  ['feed','profile','leaderboard','admin'].forEach(t => {
-    document.getElementById(`${t}-page`).classList.add('hidden');
-    document.getElementById(`nav-${t}`)?.classList.remove('active');
-  });
-  document.getElementById(`${tab}-page`).classList.remove('hidden');
-  document.getElementById(`nav-${tab}`)?.classList.add('active');
-
-  if (tab === 'profile')     loadProfile();
-  if (tab === 'leaderboard') loadLeaderboard();
-  if (tab === 'admin')       loadAdminWorkers();
-}
-
-// ── ORDERS FEED ──
-async function loadOrders() {
-  const list = document.getElementById('orders-list');
-  list.innerHTML = `<div style="text-align:center;padding:40px 0">
-    <div class="splash-loader" style="margin:0 auto"></div>
-    <div style="margin-top:12px;font-size:13px;color:var(--muted)">Загружаем заявки...</div>
-  </div>`;
-
-  const data = await api('GET', '/api/order?status=published');
-
-  if (!data || data.error || data.length === 0) {
-    list.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">☕</div>
-      <div class="empty-title">Новых заявок пока нет</div>
-      <div class="empty-sub">Отдыхайте, мы уведомим когда появится работа</div>
-    </div>`;
-    document.getElementById('orders-badge').classList.add('hidden');
-    return;
-  }
-
-  const badge = document.getElementById('orders-badge');
-  badge.textContent = data.length;
-  badge.classList.remove('hidden');
-
-  list.innerHTML = '';
-  data.forEach((order, i) => {
-    const isUrgent = i === 0;
-    const div = document.createElement('div');
-    div.className = `order-card${isUrgent ? ' urgent' : ''}`;
-    div.style.animationDelay = `${i * 0.08}s`;
-    div.innerHTML = `
-      <div class="order-top">
-        <div>
-          ${isUrgent ? '<div class="order-city">🔥 СРОЧНАЯ</div>' : `<div class="order-city">${order.city || 'Октябрьский'}</div>`}
-          <div class="order-title">${order.service || order.task || 'Задача'}</div>
-        </div>
-        <div class="order-time">${timeAgo(order.created_at)}</div>
-      </div>
-      <div class="order-meta">
-        <div class="meta-tag"><span class="icon">📍</span>${order.address || '—'}</div>
-        <div class="meta-tag"><span class="icon">👷</span>${order.workers_needed || 1} чел.</div>
-      </div>
-      <div class="order-pay">Договорная <span>· оплата на месте</span></div>
-      <div class="phone-hidden">
-        🔒 Контакт заказчика — после принятия заявки
-      </div>
-      <button class="btn btn-primary" onclick='openAcceptModal(${JSON.stringify(order)})'>
-        ✅ Принять заявку
-      </button>
-    `;
-    list.appendChild(div);
-  });
-}
-
-// ── ACCEPT MODAL ──
-function openAcceptModal(order) {
-  selectedOrder = order;
-  document.getElementById('confirm-input').value = '';
-
-  const title = order.service || order.task || 'Задача';
-  document.getElementById('modal-order-info').innerHTML = `
-    <div class="card" style="margin:0">
-      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px">🔧 ${title}</div>
-      <div class="meta-tag" style="display:inline-flex;margin-bottom:6px">
-        📍 ${order.address || '—'}
-      </div>
-      <div style="font-size:13px;color:var(--muted)">${order.comment || ''}</div>
-    </div>
-  `;
-
-  document.getElementById('accept-modal').classList.remove('hidden');
-}
-
-async function finalAccept() {
-  const text = document.getElementById('confirm-input').value.toLowerCase().trim();
-  if (text !== 'подтверждаю') {
-    showToast('Напишите «подтверждаю»', 'error');
-    return;
-  }
-
-  const btn = document.getElementById('btn-final-accept');
-  btn.disabled = true;
-  btn.textContent = 'Обработка...';
-
-  const res = await api('POST', '/api/worker-actions', {
-    action: 'accept_order',
-    order_id: selectedOrder.id,
-    worker_id: currentWorker.id
-  });
-
-  btn.disabled = false;
-  btn.textContent = '✅ Подтвердить и получить контакт';
-
-  if (res.success) {
-    closeModal('accept-modal');
-    // Показываем телефон
-    const phone = selectedOrder.phone || res.phone || '—';
-    showPhoneReveal(phone, selectedOrder);
-    loadOrders();
-  } else {
-    showToast(res.error || 'Ошибка. Попробуйте снова.', 'error');
-  }
-}
-
-function showPhoneReveal(phone, order) {
-  // Динамически показываем номер в новом модале
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `
-    <div class="modal-sheet">
-      <div class="modal-handle"></div>
-      <div class="modal-title">🎉 Заявка принята!</div>
-      <div class="phone-reveal">
-        <div class="phone-reveal-label">Телефон заказчика</div>
-        <div class="phone-reveal-num">${phone}</div>
-      </div>
-      <div class="card" style="margin-bottom:14px">
-        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">
-          🔧 ${order.service || order.task}
-        </div>
-        <div style="font-size:13px;color:var(--muted)">📍 ${order.address}</div>
-      </div>
-      <a href="tel:${phone}" class="btn btn-success" style="text-decoration:none;margin-bottom:8px">
-        📞 Позвонить заказчику
-      </a>
-      <button class="btn btn-outline" onclick="this.closest('.modal-overlay').remove()">
-        Закрыть
-      </button>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-}
-
-// ── PROFILE ──
-function loadProfile() {
-  if (!currentWorker) return;
-
-  const stars   = currentWorker.stars || 0;
-  const rank    = getRank(stars);
-  const prog    = getProgress(stars);
-  const init    = getInitials(currentWorker.name);
-  const orders  = currentWorker.total_orders || 0;
-
-  document.getElementById('profile-avatar').textContent   = init;
-  document.getElementById('profile-name').textContent     = currentWorker.name || 'Рабочий';
-  document.getElementById('profile-rank-badge').textContent = rank.name;
-  document.getElementById('stat-orders').textContent      = orders;
-  document.getElementById('stat-stars').textContent       = `${stars}⭐`;
-  document.getElementById('progress-fill').style.width    = `${prog.pct}%`;
-  document.getElementById('progress-cur-rank').textContent = rank.name;
-  document.getElementById('bank-details').value           = currentWorker.bank_details || '';
-
-  const nextRank = RANKS[RANKS.indexOf(rank) + 1];
-  if (nextRank) {
-    document.getElementById('progress-next-rank').textContent = `${nextRank.name} →`;
-    document.getElementById('progress-label-txt').textContent = `Ещё ${prog.needed} ⭐ до ${nextRank.name}`;
-  } else {
-    document.getElementById('progress-next-rank').textContent = '👑 Максимум';
-    document.getElementById('progress-label-txt').textContent = 'Вы достигли высшего звания!';
-  }
-
-  // Бейджи
-  const badgesRow = document.getElementById('badges-row');
-  const badges = [
-    { key: 'first',  icon: '🥇', label: 'Первый заказ', earned: orders >= 1 },
-    { key: 'ten',    icon: '🔥', label: '10 заказов',   earned: orders >= 10 },
-    { key: 'top3',   icon: '🏆', label: 'Топ-3',        earned: false },
-    { key: 'month',  icon: '📅', label: 'Ветеран',      earned: false },
-  ];
-  badgesRow.innerHTML = badges.map(b => `
-    <div class="badge-chip ${b.earned ? 'earned' : ''}">
-      ${b.icon} ${b.label}
-    </div>
-  `).join('');
-
-  // Место в рейтинге — подгружаем
-  loadMyRank();
-
-  // История
-  loadHistory();
-}
-
-async function loadMyRank() {
-  const data = await api('GET', '/api/order?status=workers');
-  // Просто показываем заглушку если API не вернул нужное
-  document.getElementById('stat-level-num').textContent = '#—';
-}
-
-async function loadHistory() {
-  const histList = document.getElementById('history-list');
-  // В будущем — реальная история, пока заглушка
-  histList.innerHTML = `<div class="empty-state" style="padding:20px 0">
-    <div class="empty-icon">📋</div>
-    <div class="empty-title">История пуста</div>
-    <div class="empty-sub">Принятые заявки будут отображаться здесь</div>
-  </div>`;
-}
-
-async function saveDetails() {
-  if (!currentWorker) return;
-  const details = document.getElementById('bank-details').value.trim();
-  await api('POST', '/api/worker-actions', {
-    action: 'save_details',
-    worker_id: currentWorker.id,
-    bank_details: details
-  });
-  showToast('✅ Реквизиты сохранены', 'success');
-}
-
-// ── LEADERBOARD ──
-async function loadLeaderboard() {
-  const list = document.getElementById('leaderboard-list');
-  list.innerHTML = `<div style="text-align:center;padding:40px 0">
-    <div class="splash-loader" style="margin:0 auto"></div>
-  </div>`;
-
-  const data = await api('GET', '/api/worker-auth?leaderboard=1');
-
-  if (!data || data.error || !Array.isArray(data)) {
-    // Показываем заглушку если API не готов
-    list.innerHTML = renderMockLeaderboard();
-    return;
-  }
-
-  list.innerHTML = renderLeaderboard(data);
-}
-
-function renderLeaderboard(workers) {
-  const medals = ['gold','silver','bronze'];
-  const trophies = ['🥇','🥈','🥉'];
-  return workers.slice(0, 20).map((w, i) => {
-    const rank = getRank(w.stars || 0);
-    const isMe = currentWorker && w.id == currentWorker.id;
-    const pos  = i + 1;
-    return `
-      <div class="lb-item ${isMe ? 'me' : ''} ${pos === 1 ? 'top1' : ''}">
-        <div class="lb-pos ${medals[i] || ''}">${trophies[i] || pos}</div>
-        <div class="lb-avatar">${getInitials(w.name)}</div>
-        <div class="lb-info">
-          <div class="lb-name">${w.name || 'Рабочий'}${isMe ? ' <span style="color:var(--accent);font-size:11px">(Вы)</span>' : ''}</div>
-          <div class="lb-rank-tag">${rank.name}</div>
-        </div>
-        <div class="lb-score">${w.stars || 0}⭐</div>
-      </div>
-    `;
-  }).join('');
-}
-
-function renderMockLeaderboard() {
-  // Показываем текущего пользователя + заглушки
-  const workers = [
-    { id: currentWorker?.id, name: currentWorker?.name || 'Вы', stars: currentWorker?.stars || 0 },
-  ];
-  return renderLeaderboard(workers) + `
-    <div class="empty-state" style="padding:20px 0">
-      <div class="empty-sub">Рейтинг заполнится когда появятся участники</div>
-    </div>
-  `;
-}
-
-// ── ADMIN ──
-function selectCity(el, city) {
-  selectedCity = city;
-  document.querySelectorAll('.city-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-}
-
-async function publishOrder() {
-  const task    = document.getElementById('admin-task').value.trim();
-  const address = document.getElementById('admin-address').value.trim();
-  const phone   = document.getElementById('admin-phone').value.trim();
-  const comment = document.getElementById('admin-comment').value.trim();
-  const workers = parseInt(document.getElementById('admin-workers').value) || 1;
-
-  if (!task || !address || !phone) {
-    showToast('Заполните задачу, адрес и телефон', 'error');
-    return;
-  }
-
-  const btn = document.getElementById('btn-publish');
-  btn.disabled = true;
-  btn.textContent = 'Публикация...';
-
-  const res = await api('POST', '/api/order', {
-    source: 'admin',
-    service: task,
-    address,
-    phone,
-    city: selectedCity,
-    comment,
-    workers_needed: workers,
-    status: 'published'
-  });
-
-  btn.disabled = false;
-  btn.textContent = '📢 Опубликовать заявку';
-
-  if (res.success || res.orderId) {
-    document.getElementById('admin-form-card').classList.add('hidden');
-    document.getElementById('admin-success-card').classList.remove('hidden');
-    showToast(`✅ Заявка #${res.orderId} опубликована`, 'success');
-  } else {
-    showToast(res.error || 'Ошибка сервера', 'error');
-  }
-}
-
-function resetAdminForm() {
-  document.getElementById('admin-task').value    = '';
-  document.getElementById('admin-address').value = '';
-  document.getElementById('admin-phone').value   = '';
-  document.getElementById('admin-comment').value = '';
-  document.getElementById('admin-workers').value = '1';
-  document.getElementById('admin-form-card').classList.remove('hidden');
-  document.getElementById('admin-success-card').classList.add('hidden');
-}
-
-async function loadAdminWorkers() {
-  const list = document.getElementById('admin-workers-list');
-  list.innerHTML = `<div style="text-align:center;padding:20px 0">
-    <div class="splash-loader" style="margin:0 auto"></div>
-  </div>`;
-
-  const data = await api('GET', '/api/worker-auth?list=1');
-
-  if (!data || data.error || !Array.isArray(data) || data.length === 0) {
-    list.innerHTML = `<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px 0">
-      Рабочие ещё не зарегистрированы
-    </div>`;
-    return;
-  }
-
-  list.innerHTML = data.map(w => {
-    const rank = getRank(w.stars || 0);
-    return `
-      <div class="worker-list-item" onclick="openRateModal(${JSON.stringify(w)})">
-        <div class="wli-avatar">${getInitials(w.name)}</div>
-        <div class="wli-info">
-          <div class="wli-name">${w.name}</div>
-          <div class="wli-rank">${rank.name}</div>
-        </div>
-        <div class="wli-score">${w.stars || 0}⭐</div>
-      </div>
-    `;
-  }).join('');
-}
-
-function openRateModal(worker) {
-  selectedWorkerForRate = worker;
-  selectedStars = 0;
-  document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('stars-hint').textContent = 'Выберите количество звёзд';
-  document.getElementById('rate-worker-info').innerHTML = `
-    <div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">
-      <div class="wli-avatar">${getInitials(worker.name)}</div>
-      <div>
-        <div style="font-weight:700;color:#fff">${worker.name}</div>
-        <div style="font-size:12px;color:var(--muted)">${getRank(worker.stars||0).name} · ${worker.stars||0}⭐</div>
-      </div>
-    </div>
-  `;
-  document.getElementById('rate-modal').classList.remove('hidden');
-}
-
-function selectStars(n) {
-  selectedStars = n;
-  const btns = document.querySelectorAll('.star-btn');
-  btns.forEach((b, i) => b.classList.toggle('active', i < n));
-  const labels = ['','Плохо 😕','Нормально 😐','Хорошо 👍','Отлично 🔥','Легенда 👑'];
-  document.getElementById('stars-hint').textContent = labels[n] || '';
-}
-
-async function giveStars() {
-  if (!selectedStars || !selectedWorkerForRate) {
-    showToast('Выберите количество звёзд', 'error');
-    return;
-  }
-
-  const res = await api('POST', '/api/worker-actions', {
-    action: 'give_stars',
-    worker_id: selectedWorkerForRate.id,
-    stars: selectedStars
-  });
-
-  closeModal('rate-modal');
-
-  if (res.success) {
-    showToast(`⭐ ${selectedWorkerForRate.name} получил +${selectedStars} звёзд!`, 'success');
-    loadAdminWorkers();
-  } else {
-    showToast(res.error || 'Ошибка', 'error');
-  }
-}
-
-// ── INIT ──
-window.addEventListener('load', () => {
-  const userId = tg?.initDataUnsafe?.user?.id;
-
-  setTimeout(() => {
-    document.getElementById('splash').classList.add('hidden');
-
-    // Если это админ без входа — сразу в приложение
-    // Иначе — экран авторизации
-    document.getElementById('auth-page').classList.remove('hidden');
-  }, 1800);
-});
+const ACHIEVEMENTS=[
+  {id:'first',icon:'🥇',name:'Первый заказ',desc:'Принял свою первую заявку',check:w=>w.total_orders>=1},
+  {id:'ten',icon:'🔥',name:'Ветеран заявок',desc:'Выполнил 10 заявок подряд',check:w=>w.total_orders>=10},
+  {id:'fifty',icon:'💪',name:'Полсотни',desc:'50 выполненных заявок — профи',check:w=>w.total_orders>=50},
+  {id:'stars5',icon:'⭐',name:'Первые звёзды',desc:'Получил первые 5 звёзд от админа',check:w=>(w.stars||0)>=5},
+  {id:'top3',icon:'🏆',name:'Топ-3 рейтинга',desc:'Вошёл в тройку лучших рабочих',check:w=>(w._place||99)<=3},
+  {id:'rank3',icon:'⚙️',name:'Звание: Механик',desc:'Достиг уровня Механик (12 звёзд)',check:w=>(w.stars||0)>=12},
+  {id:'rank6',icon:'🏗️',name:'Звание: Прораб',desc:'Достиг звания Прораб (25 звёзд)',check:w=>(w.stars||0)>=25},
+  {id:'founder',icon:'🌟',name:'Основатель VSH',desc:'Один из первых участников системы',check:w=>w._isEarly},
+];
+let currentWorker=null,selectedOrder=null,selectedWorkerForRate=null,selectedStars=0,selectedCity='Октябрьский',pinCode='',rulesTimerID=null,callTimerID=null;
+function getRank(s){let r=RANKS[0];for(const rk of RANKS){if(s>=rk.min)r=rk;}return r;}
+function getRankIndex(s){let i=0;RANKS.forEach((r,idx)=>{if(s>=r.min)i=idx;});return i;}
+function getProgress(s){const idx=getRankIndex(s);const cur=RANKS[idx];const next=RANKS[idx+1];if(!next)return{pct:100,needed:0,nextName:'Максимум'};const range=next.min-cur.min;const done=s-cur.min;return{pct:Math.round((done/range)*100),needed:next.min-s,nextName:next.name};}
+function getInitials(n){if(!n)return'?';return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
+function timeAgo(d){const m=Math.floor((Date.now()-new Date(d).getTime())/60000);if(m<1)return'только что';if(m<60)return m+' мин назад';const h=Math.floor(m/60);if(h<24)return h+' ч назад';return Math.floor(h/24)+' д назад';}
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3000);}
+function closeModal(id){document.getElementById(id).classList.add('hidden');if(rulesTimerID){clearInterval(rulesTimerID);rulesTimerID=null;}if(callTimerID){clearInterval(callTimerID);callTimerID=null;}}
+async function apiCall(method,endpoint,body){const opts={method,headers:{'Content-Type':'application/json'}};if(body)opts.body=JSON.stringify(body);try{const r=await fetch(API+endpoint,opts);return await r.json();}catch(e){return{error:e.message};}}
+function pinInput(d){if(pinCode.length>=4)return;pinCode+=d;updateDots();if(pinCode.length===4)checkPin();}
+function pinDelete(){pinCode=pinCode.slice(0,-1);updateDots();document.getElementById('auth-error').classList.remove('show');}
+function updateDots(){for(let i=0;i<4;i++)document.getElementById('dot-'+i).classList.toggle('filled',i<pinCode.length);}
+async function checkPin(){if(pinCode!==PIN){document.getElementById('auth-error').classList.add('show');setTimeout(()=>{pinCode='';updateDots();document.getElementById('auth-error').classList.remove('show');},1200);return;}const userId=tg?.initDataUnsafe?.user?.id||Date.now();const userName=tg?.initDataUnsafe?.user?.first_name||'Рабочий';try{const res=await apiCall('POST','/api/worker-auth',{password:PIN,telegram_id:userId,first_name:userName});currentWorker=res.ok?res.worker:{id:userId,name:userName,stars:0,total_orders:0,bank_details:''};}catch{currentWorker={id:userId,name:userName,stars:0,total_orders:0,bank_details:''};}enterApp();}
+function enterApp(){document.getElementById('auth-page').classList.add('hidden');document.getElementById('app').classList.remove('hidden');const uid=tg?.initDataUnsafe?.user?.id||currentWorker?.id;if(String(uid)===String(ADMIN_ID))document.getElementById('nav-admin').classList.remove('hidden');updateHeaderUI();loadOrders();}
+function logout(){currentWorker=null;pinCode='';updateDots();document.getElementById('app').classList.add('hidden');document.getElementById('auth-page').classList.remove('hidden');}
+function updateHeaderUI(){if(!currentWorker)return;const rank=getRank(currentWorker.stars||0);document.getElementById('header-avatar').textContent=getInitials(currentWorker.name);document.getElementById('header-rank').textContent=rank.name;}
+function switchTab(tab){['feed','profile','leaderboard','admin'].forEach(t=>{document.getElementById(t+'-page').classList.add('hidden');document.getElementById('nav-'+t)?.classList.remove('active');});document.getElementById(tab+'-page').classList.remove('hidden');document.getElementById('nav-'+tab)?.classList.add('active');if(tab==='profile')loadProfile();if(tab==='leaderboard')loadLeaderboard();if(tab==='admin')loadAdminWorkers();}
+async function loadOrders(){const list=document.getElementById('orders-list');list.innerHTML='<div style="text-align:center;padding:48px 0"><div class="splash-loader" style="margin:0 auto 12px"></div><div style="font-size:13px;color:var(--muted)">Загружаем заявки...</div></div>';const data=await apiCall('GET','/api/order?status=published');if(!data||data.error||!data.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">☕</div><div class="empty-title">Заявок пока нет</div><div class="empty-sub">Уведомим в Telegram когда появится работа</div></div>';document.getElementById('orders-badge').classList.add('hidden');return;}const badge=document.getElementById('orders-badge');badge.textContent=data.length;badge.classList.remove('hidden');list.innerHTML='';data.forEach((order,i)=>{const urgent=i===0;const div=document.createElement('div');div.className='order-card'+(urgent?' urgent':'');div.style.animationDelay=i*.07+'s';const safeOrder=JSON.stringify(order).replace(/'/g,"&#39;").replace(/"/g,'&quot;');div.innerHTML='<div class="order-top"><div><div class="order-city'+(urgent?' urgent-tag':'')+'">'+( urgent?'🔥 СРОЧНАЯ':order.city||'Октябрьский')+'</div><div class="order-title">'+(order.service||order.task||'Задача')+'</div></div><div class="order-time">'+timeAgo(order.created_at)+'</div></div><div class="order-meta"><div class="meta-tag">📍 '+(order.address||'—')+'</div><div class="meta-tag">👷 '+(order.workers_needed||1)+' чел.</div>'+(order.comment?'<div class="meta-tag">💬 '+order.comment.slice(0,30)+(order.comment.length>30?'...':'')+'</div>':'')+'</div><div class="order-phone-lock">🔒 Контакт заказчика откроется после принятия</div><button class="btn btn-primary" onclick="openOrderModal('+safeOrder+')">✅ Принять заявку</button>';list.appendChild(div);});}
+function openOrderModal(order){selectedOrder=order;document.getElementById('modal-rules').classList.remove('hidden');startRulesTimer();}
+function startRulesTimer(){const btn=document.getElementById('btn-rules-confirm');const numEl=document.getElementById('rules-timer');const circle=document.getElementById('rules-progress');btn.disabled=true;let sec=30;circle.style.strokeDashoffset='0';rulesTimerID=setInterval(()=>{sec--;numEl.textContent=sec;const offset=240-(240*(30-sec)/30);circle.style.strokeDashoffset=offset;if(sec<=10)circle.classList.add('urgent');if(sec<=0){clearInterval(rulesTimerID);btn.disabled=false;btn.textContent='✅ Ознакомлен, подтверждаю';numEl.textContent='✓';}},1000);}
+function rulesConfirmed(){if(rulesTimerID){clearInterval(rulesTimerID);rulesTimerID=null;}document.getElementById('modal-rules').classList.add('hidden');openCallModal();}
+async function openCallModal(){const res=await apiCall('POST','/api/worker-actions',{action:'accept_order',order_id:selectedOrder.id,worker_id:currentWorker.id});const phone=selectedOrder.phone||res.phone||'—';document.getElementById('reveal-phone').textContent=phone;document.getElementById('btn-call-link').href='tel:'+phone;const title=selectedOrder.service||selectedOrder.task||'Задача';document.getElementById('modal-order-preview').innerHTML='<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">🔧 '+title+'</div><div style="font-size:13px;color:var(--muted)">📍 '+(selectedOrder.address||'—')+'</div></div>';document.getElementById('modal-call').classList.remove('hidden');startCallTimer();}
+function startCallTimer(){const numEl=document.getElementById('call-timer');const circle=document.getElementById('call-progress');let totalSec=180;callTimerID=setInterval(()=>{totalSec--;const m=Math.floor(totalSec/60);const s=totalSec%60;numEl.textContent=m+':'+(s<10?'0':'')+s;const offset=240-(240*(180-totalSec)/180);circle.style.strokeDashoffset=offset;if(totalSec<=60)circle.classList.add('urgent');if(totalSec<=20){circle.classList.remove('urgent');circle.classList.add('critical');}if(totalSec<=0){clearInterval(callTimerID);numEl.textContent='⏰';showToast('⏰ Время вышло! Подтвердите статус.','warn');}},1000);}
+function callConfirmed(){if(callTimerID){clearInterval(callTimerID);callTimerID=null;}document.getElementById('modal-call').classList.add('hidden');showToast('🚀 Отлично! Удачи на заявке!','success');loadOrders();}
+function callDeclined(){if(callTimerID){clearInterval(callTimerID);callTimerID=null;}document.getElementById('modal-call').classList.add('hidden');showToast('Заявка отменена','error');loadOrders();}
+function loadProfile(){if(!currentWorker)return;const stars=currentWorker.stars||0;const orders=currentWorker.total_orders||0;const rank=getRank(stars);const prog=getProgress(stars);document.getElementById('profile-avatar').textContent=getInitials(currentWorker.name);document.getElementById('profile-name').textContent=currentWorker.name||'Рабочий';document.getElementById('profile-rank-pill').textContent=rank.name;document.getElementById('s-orders').textContent=orders;document.getElementById('s-stars').textContent=stars+'⭐';document.getElementById('prog-fill').style.width=prog.pct+'%';document.getElementById('prog-cur').textContent=rank.name;document.getElementById('prog-next').textContent=prog.nextName!=='Максимум'?prog.nextName+' →':'👑 Максимум';document.getElementById('prog-hint').textContent=prog.needed>0?'Ещё '+prog.needed+' ⭐ до следующего звания':'🏆 Высшее звание!';document.getElementById('bank-details').value=currentWorker.bank_details||'';const grid=document.getElementById('ach-grid');grid.innerHTML=ACHIEVEMENTS.map(a=>{const earned=a.check(currentWorker);return'<div class="ach-item '+(earned?'earned':'')+'"><div class="ach-icon">'+a.icon+'</div><div class="ach-name">'+a.name+'</div><div class="ach-desc">'+(earned?a.desc:'🔒 Заблокировано')+'</div></div>';}).join('');}
+async function saveDetails(){if(!currentWorker)return;const v=document.getElementById('bank-details').value.trim();const res=await apiCall('POST','/api/worker-actions',{action:'save_details',worker_id:currentWorker.id,bank_details:v});if(res.success){currentWorker.bank_details=v;showToast('✅ Реквизиты сохранены','success');}else showToast('Ошибка сохранения','error');}
+async function loadLeaderboard(){const list=document.getElementById('lb-list');list.innerHTML='<div style="text-align:center;padding:40px 0"><div class="splash-loader" style="margin:0 auto"></div></div>';const data=await apiCall('GET','/api/worker-auth?list=1');if(!data||data.error||!Array.isArray(data)||!data.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">Рейтинг пуст</div><div class="empty-sub">Первые рабочие появятся здесь</div></div>';return;}data.forEach((w,i)=>{if(currentWorker&&String(w.id)===String(currentWorker.id))currentWorker._place=i+1;});const medals=['pos-gold','pos-silver','pos-bronze'];const trophies=['🥇','🥈','🥉'];list.innerHTML=data.slice(0,20).map((w,i)=>{const isMe=currentWorker&&String(w.id)===String(currentWorker.id);const rank=getRank(w.stars||0);return'<div class="lb-item '+(isMe?'me':'')+' '+(i===0?'top1':'')+'"><div class="lb-pos '+(medals[i]||'')+'">'+( trophies[i]||i+1)+'</div><div class="lb-avatar">'+getInitials(w.name)+'</div><div class="lb-info"><div class="lb-name">'+(w.name||'Рабочий')+(isMe?' <span style="color:var(--accent);font-size:10px">(Вы)</span>':'')+'</div><div class="lb-rank-tag">'+rank.name+' · '+(w.total_orders||0)+' заявок</div></div><div class="lb-score">'+(w.stars||0)+'⭐</div></div>';}).join('');}
+function selectCity(el,city){selectedCity=city;document.querySelectorAll('.city-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+async function publishOrder(){const task=document.getElementById('a-task').value.trim();const address=document.getElementById('a-address').value.trim();const phone=document.getElementById('a-phone').value.trim();const comment=document.getElementById('a-comment').value.trim();const workers=parseInt(document.getElementById('a-workers').value)||1;if(!task||!address||!phone){showToast('Заполните задачу, адрес и телефон','error');return;}const btn=document.getElementById('btn-pub');btn.disabled=true;btn.textContent='Публикация...';const res=await apiCall('POST','/api/order',{source:'admin',service:task,address,phone,city:selectedCity,comment,workers_needed:workers,status:'published'});btn.disabled=false;btn.textContent='📢 Опубликовать заявку';if(res.success||res.orderId){document.getElementById('admin-form').classList.add('hidden');document.getElementById('admin-ok').classList.remove('hidden');}else showToast(res.error||'Ошибка сервера','error');}
+function resetAdmin(){['a-task','a-address','a-phone','a-comment'].forEach(id=>document.getElementById(id).value='');document.getElementById('a-workers').value='1';document.getElementById('admin-form').classList.remove('hidden');document.getElementById('admin-ok').classList.add('hidden');}
+async function loadAdminWorkers(){const list=document.getElementById('admin-wlist');list.innerHTML='<div style="text-align:center;padding:16px 0"><div class="splash-loader" style="margin:0 auto"></div></div>';const data=await apiCall('GET','/api/worker-auth?list=1');if(!data||!Array.isArray(data)||!data.length){list.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">Рабочих пока нет</div>';return;}list.innerHTML=data.map(w=>{const rank=getRank(w.stars||0);const safeW=JSON.stringify(w).replace(/'/g,"&#39;").replace(/"/g,'&quot;');return'<div class="worker-list-item" onclick="openStarsModal('+safeW+')"><div class="wli-avatar">'+getInitials(w.name)+'</div><div class="wli-info"><div class="wli-name">'+w.name+'</div><div class="wli-rank">'+rank.name+' · '+(w.total_orders||0)+' заявок</div></div><div class="wli-score">'+(w.stars||0)+'⭐</div></div>';}).join('');}
+function openStarsModal(worker){selectedWorkerForRate=worker;selectedStars=0;document.querySelectorAll('.star-btn').forEach(b=>b.classList.remove('active'));document.getElementById('stars-hint').textContent='Выберите оценку';document.getElementById('rate-worker-info').innerHTML='<div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px"><div class="wli-avatar">'+getInitials(worker.name)+'</div><div><div style="font-weight:700;color:#fff">'+worker.name+'</div><div style="font-size:12px;color:var(--muted)">'+getRank(worker.stars||0).name+' · '+(worker.stars||0)+'⭐</div></div></div>';document.getElementById('modal-stars').classList.remove('hidden');}
+function selectStars(n){selectedStars=n;document.querySelectorAll('.star-btn').forEach((b,i)=>b.classList.toggle('active',i<n));const labels=['','Слабовато 😕','Нормально 😐','Хорошо 👍','Отлично 🔥','Легенда 👑'];document.getElementById('stars-hint').textContent=labels[n]||'';}
+async function giveStars(){if(!selectedStars){showToast('Выберите оценку','error');return;}const prevIdx=getRankIndex(selectedWorkerForRate.stars||0);const res=await apiCall('POST','/api/worker-actions',{action:'give_stars',worker_id:selectedWorkerForRate.id,stars:selectedStars});closeModal('modal-stars');if(res.success){showToast('⭐ '+selectedWorkerForRate.name+' +'+selectedStars+' звёзд!','success');const newIdx=getRankIndex(res.newTotal||0);if(newIdx>prevIdx)showRankUp(RANKS[newIdx].name,RANKS[newIdx].icon);loadAdminWorkers();}else showToast(res.error||'Ошибка','error');}
+function showRankUp(rankName,icon){const o=document.createElement('div');o.className='rankup-overlay';o.innerHTML='<div class="rankup-card"><div class="rankup-icon">'+icon+'</div><div class="rankup-title">НОВОЕ ЗВАНИЕ!</div><div class="rankup-rank">'+rankName+'</div><p style="font-size:13px;color:var(--muted);margin-bottom:20px">Рабочий получит уведомление в Telegram</p><button class="btn btn-primary" onclick="this.closest(\'.rankup-overlay\').remove()">Отлично! 🎉</button></div>';document.body.appendChild(o);}
+window.addEventListener('load',()=>{setTimeout(()=>{document.getElementById('splash').classList.add('hidden');document.getElementById('auth-page').classList.remove('hidden');},1800);});
 </script>
 </body>
 </html>
