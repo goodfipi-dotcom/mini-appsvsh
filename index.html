@@ -51,6 +51,9 @@ body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear
 .auth-error{color:var(--danger);font-size:13px;margin-top:8px;display:none;animation:shake .3s ease}
 .auth-error.show{display:block}
 
+/* REFERRAL */
+#referral-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(6,8,16,.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:8px 0 env(safe-area-inset-bottom,8px)}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;cursor:pointer;transition:all .2s;color:var(--muted)}
@@ -202,6 +205,20 @@ textarea.input{height:80px;resize:none}
 .chat-input:focus{border-color:rgba(56,189,248,.4)}
 .chat-send{width:44px;height:44px;border-radius:12px;background:var(--accent);border:none;color:#060810;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
+.chat-attach-btn{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--accent);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.chat-attach-btn:active{transform:scale(.96)}
+.chat-attach-preview{margin:10px 0 0;display:flex;gap:8px;flex-wrap:wrap}
+.chat-attach-item{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:8px 10px;display:flex;gap:10px;align-items:center}
+.chat-attach-thumb{width:40px;height:40px;border-radius:10px;object-fit:cover;background:rgba(255,255,255,.05);border:1px solid var(--border)}
+.chat-attach-item button{border:none;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);color:var(--danger);border-radius:10px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
+.chat-msg-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.chat-msg-actions{margin-left:auto;display:flex;gap:6px}
+.chat-msg-action-btn{border:none;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:6px 8px;font-size:12px;cursor:pointer}
+.chat-msg-action-btn:active{transform:scale(.97)}
+.chat-avatar-sm{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;cursor:pointer;flex-shrink:0}
+.chat-attachment-img{max-width:240px;border-radius:12px;margin-top:8px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
+.chat-attachment-video{max-width:240px;border-radius:12px;margin-top:8px;border:1px solid var(--border);background:rgba(255,255,255,.03)}
+
 /* WORKER PROFILE CARD */
 .wp-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;transition:all .2s}
 .wp-card:active{transform:scale(.98)}
@@ -275,6 +292,21 @@ textarea.input{height:80px;resize:none}
   <div class="splash-logo">VSH<span>.</span></div>
   <div class="splash-tagline">Октябрьский · Туймазы · Работа есть</div>
   <div class="splash-loader"></div>
+</div>
+
+<!-- REFERRAL -->
+<div id="referral-page" class="page hidden">
+  <div class="auth-card">
+    <div class="auth-logo">VSH<span>.</span></div>
+    <div class="auth-sub">У вас есть код приглашения?</div>
+    <label class="input-label" style="margin-top:6px">Введите код (если есть)</label>
+    <input type="text" class="input" id="referral-code-input" placeholder="Например: VSH-W-1234">
+    <div class="auth-error" id="referral-error">❌ Код приглашения не принят</div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-outline btn-sm" style="width:50%" onclick="skipReferralCode()">Пропустить</button>
+      <button class="btn btn-primary btn-sm" style="width:50%" onclick="applyReferralCode()">Применить</button>
+    </div>
+  </div>
 </div>
 
 <!-- AUTH -->
@@ -532,8 +564,11 @@ textarea.input{height:80px;resize:none}
       </div>
       <div class="chat-input-wrap">
         <input type="text" class="chat-input" id="chat-input" placeholder="Написать в чат..." maxlength="300">
+        <button class="chat-attach-btn" onclick="triggerChatFilePicker()" title="Прикрепить фото/видео">📎</button>
+        <input type="file" id="chat-file-input" accept="image/*,video/*" multiple style="display:none" onchange="onChatFilesSelected(this)">
         <button class="chat-send" onclick="sendChatMsg()">➤</button>
       </div>
+      <div id="chat-attach-preview" class="chat-attach-preview hidden"></div>
     </div>
   </div>
 </div>
@@ -653,6 +688,28 @@ textarea.input{height:80px;resize:none}
   </div>
 </div>
 
+<!-- MODAL: CHAT EDIT -->
+<div id="modal-chat-edit" class="modal-overlay hidden">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ Сообщение</div>
+    <input type="hidden" id="chat-edit-id">
+    <label class="input-label">Текст</label>
+    <textarea class="input" id="chat-edit-text" placeholder="Текст сообщения" maxlength="10000"></textarea>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn btn-primary" style="width:100%" id="chat-edit-btn-save" onclick="saveChatEdit()">✅ Сохранить</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn btn-danger" style="width:100%" id="chat-edit-btn-del-all" onclick="deleteChatMessageAll()">🗑️ Удалить для всех</button>
+      <button class="btn btn-outline" style="width:100%" id="chat-edit-btn-del-me" onclick="deleteChatMessageMe()">🗑️ Удалить у себя</button>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn btn-outline btn-sm" style="width:100%" id="chat-edit-btn-copy" onclick="copyChatEditText()">📋 Копировать</button>
+    </div>
+    <button class="btn btn-outline" style="margin-top:10px" onclick="closeModal('modal-chat-edit')">Отмена</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -720,6 +777,84 @@ function escapeHtml(str) {
 function pinInput(d){if(pinCode.length>=4)return;pinCode+=d;updateDots();if(pinCode.length===4)checkPin()}
 function pinDelete(){pinCode=pinCode.slice(0,-1);updateDots();document.getElementById('auth-error').classList.remove('show')}
 function updateDots(){for(let i=0;i<4;i++)document.getElementById('dot-'+i).classList.toggle('filled',i<pinCode.length)}
+
+// ── REFERRAL FLOW (before PIN) ──
+const REFERRAL_STEP_KEY_PREFIX = 'vsh_referral_step_done_';
+
+function getEntryTelegramUser() {
+  try {
+    return tg?.initDataUnsafe?.user || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function getReferralStepKey() {
+  const u = getEntryTelegramUser();
+  if (!u || u.id === undefined || u.id === null) return null;
+  return REFERRAL_STEP_KEY_PREFIX + String(u.id);
+}
+
+function showAuthPage() {
+  document.getElementById('referral-page')?.classList.add('hidden');
+  document.getElementById('auth-page')?.classList.remove('hidden');
+  document.getElementById('referral-error')?.classList.remove('show');
+}
+
+function showReferralPage() {
+  document.getElementById('auth-page')?.classList.add('hidden');
+  document.getElementById('referral-page')?.classList.remove('hidden');
+  document.getElementById('referral-error')?.classList.remove('show');
+  const inp = document.getElementById('referral-code-input');
+  if (inp) inp.value = '';
+}
+
+async function applyReferralCode() {
+  const u = getEntryTelegramUser();
+  const key = getReferralStepKey();
+  const code = (document.getElementById('referral-code-input')?.value || '').trim();
+  if (!u || !key) { showAuthPage(); return; }
+  if (!code) { skipReferralCode(); return; }
+
+  const first_name = u.first_name || 'Рабочий';
+  const telegram_username = u.username || '';
+  const res = await apiCall('POST', '/api/referral/use', {
+    inviter_code: code,
+    telegram_id: u.id,
+    first_name,
+    telegram_username
+  });
+
+  if (res && res.ok) {
+    try { localStorage.setItem(key, '1'); } catch (e) {}
+    showToast('✅ Приглашение применено', 'success');
+    showAuthPage();
+  } else {
+    document.getElementById('referral-error')?.classList.add('show');
+    showToast((res && (res.error || res.message)) ? (res.error || res.message) : 'Код не принят', 'warn');
+  }
+}
+
+function skipReferralCode() {
+  const key = getReferralStepKey();
+  if (key) {
+    try { localStorage.setItem(key, '1'); } catch (e) {}
+  }
+  showAuthPage();
+}
+
+function initEntryFlow() {
+  const key = getReferralStepKey();
+  // Если не Telegram / нет user id — просто показываем PIN.
+  if (!key) {
+    showAuthPage();
+    return;
+  }
+
+  const done = (() => { try { return localStorage.getItem(key); } catch (e) { return null; } })();
+  if (done) showAuthPage();
+  else showReferralPage();
+}
 
 async function checkPin(){
   if(pinCode!==PIN){document.getElementById('auth-error').classList.add('show');setTimeout(()=>{pinCode='';updateDots();document.getElementById('auth-error').classList.remove('show')},1200);return}
@@ -1243,6 +1378,499 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ── МИНИ-ЧАТ v2 ──
+// Требования: общий чат между людьми, аватары, вложения, редактирование/удаление (для себя и для всех).
+// Пока серверные эндпоинты могут быть не готовы — будет fallback на локальное хранилище.
+let chatPendingFiles = [];
+let chatPollingID = null;
+let chatSyncInFlight = false;
+let chatPasteHandlersAttached = false;
+let chatHiddenIds = new Set();
+let chatEditMessage = null;
+
+const CHAT_HIDDEN_KEY_PREFIX = 'vsh_chat_hidden_ids_';
+
+function getChatMeId() {
+  return String(currentWorker?.id || '');
+}
+
+function getChatAuthorId(m) {
+  return String(m?.uid ?? m?.author_id ?? m?.authorId ?? m?.author?.id ?? '');
+}
+
+function getChatAuthorName(m) {
+  return m?.name ?? m?.author_name ?? m?.author?.name ?? 'Рабочий';
+}
+
+function getChatMessageId(m) {
+  return String(m?.id ?? m?.mid ?? '');
+}
+
+function getChatMessageText(m) {
+  return m?.text ?? m?.message ?? '';
+}
+
+function getChatMessageTime(m) {
+  if (m?.time) return m.time;
+  if (m?.created_at) return timeAgo(m.created_at);
+  return '';
+}
+
+function getChatAttachments(m) {
+  const a = m?.attachments ?? m?.files ?? [];
+  if (Array.isArray(a)) return a;
+  if (typeof a === 'string' && a) return [{ url: a, type: 'image' }];
+  return [];
+}
+
+function getChatSelfHiddenKey() {
+  const uid = getChatMeId();
+  if (!uid) return null;
+  return CHAT_HIDDEN_KEY_PREFIX + uid;
+}
+
+function loadChatHiddenIds() {
+  chatHiddenIds = new Set();
+  const key = getChatSelfHiddenKey();
+  if (!key) return;
+  try {
+    const saved = localStorage.getItem(key);
+    if (!saved) return;
+    const arr = JSON.parse(saved);
+    if (Array.isArray(arr)) chatHiddenIds = new Set(arr.map(String));
+  } catch (e) {}
+}
+
+function persistChatHiddenIds() {
+  const key = getChatSelfHiddenKey();
+  if (!key) return;
+  try { localStorage.setItem(key, JSON.stringify(Array.from(chatHiddenIds))); } catch (e) {}
+}
+
+function triggerChatFilePicker() {
+  document.getElementById('chat-file-input')?.click();
+}
+
+function onChatFilesSelected(inputEl) {
+  const files = Array.from(inputEl?.files || []);
+  if (!files.length) return;
+
+  // Ограничим количество.
+  const remaining = Math.max(0, 4 - chatPendingFiles.length);
+  const chosen = files.slice(0, remaining);
+  chosen.forEach(f => {
+    const t = (f?.type || '').toLowerCase();
+    if (!t.startsWith('image/') && !t.startsWith('video/')) return;
+    chatPendingFiles.push(f);
+  });
+
+  try { inputEl.value = ''; } catch (e) {}
+  renderChatAttachPreview();
+}
+
+function removePendingChatFile(i) {
+  if (i < 0 || i >= chatPendingFiles.length) return;
+  chatPendingFiles.splice(i, 1);
+  renderChatAttachPreview();
+}
+
+function renderChatAttachPreview() {
+  const wrap = document.getElementById('chat-attach-preview');
+  if (!wrap) return;
+
+  if (!chatPendingFiles.length) {
+    wrap.classList.add('hidden');
+    wrap.innerHTML = '';
+    return;
+  }
+
+  wrap.classList.remove('hidden');
+  wrap.innerHTML = chatPendingFiles.map((f, i) => {
+    const isImg = (f?.type || '').startsWith('image/');
+    const thumb = isImg
+      ? '<img class="chat-attach-thumb" src="' + URL.createObjectURL(f) + '" />'
+      : '<div class="chat-attach-thumb" style="display:flex;align-items:center;justify-content:center;font-size:11px">🎥</div>';
+    return '<div class="chat-attach-item">' +
+      thumb +
+      '<div style="min-width:0">' +
+        '<div style="color:#fff;font-weight:800;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">' + escapeHtml(f.name || 'Файл') + '</div>' +
+        '<div style="color:var(--muted);font-size:11px">' + escapeHtml(f.type || '') + '</div>' +
+      '</div>' +
+      '<button type="button" onclick="removePendingChatFile(' + i + ')">×</button>' +
+    '</div>';
+  }).join('');
+}
+
+function handleChatPaste(e) {
+  const items = e?.clipboardData?.items;
+  if (!items || !items.length) return;
+  const files = [];
+  for (const it of items) {
+    if (it.kind !== 'file') continue;
+    const file = it.getAsFile();
+    if (!file) continue;
+    const t = (file.type || '').toLowerCase();
+    if (t.startsWith('image/') || t.startsWith('video/')) files.push(file);
+  }
+  if (!files.length) return;
+
+  e.preventDefault();
+  const remaining = Math.max(0, 4 - chatPendingFiles.length);
+  files.slice(0, remaining).forEach(f => chatPendingFiles.push(f));
+  renderChatAttachPreview();
+}
+
+async function uploadChatFile(file) {
+  // Эндпоинт сервера (нужно реализовать позже): POST /api/chat/upload -> {url, type}
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const res = await fetch(API + '/api/chat/upload', { method: 'POST', body: form });
+    const data = await res.json().catch(() => null);
+    if (res.ok && data && data.url) return { url: data.url, type: data.type || file.type || '' };
+  } catch (e) {}
+  // Fallback для локального теста.
+  return { url: URL.createObjectURL(file), type: file.type || '', localOnly: true };
+}
+
+function normalizeChatMessage(m) {
+  const mid = getChatMessageId(m);
+  const author_id = getChatAuthorId(m);
+  const author_name = getChatAuthorName(m);
+  const attachments = getChatAttachments(m).map(a => ({
+    url: a.url ?? a.link ?? a.href ?? '',
+    type: a.type ?? a.kind ?? a.mime ?? ''
+  })).filter(x => x.url);
+
+  return {
+    id: mid || String(Date.now()),
+    uid: author_id,
+    name: author_name,
+    text: getChatMessageText(m),
+    time: m?.time,
+    created_at: m?.created_at,
+    attachments
+  };
+}
+
+function renderChatAttachments(m) {
+  const atts = getChatAttachments(m);
+  if (!atts.length) return '';
+
+  return atts.map(att => {
+    const mime = (att.type || att.mime || '').toLowerCase();
+    const isVideo = mime.includes('video') || att.kind === 'video';
+    if (isVideo) {
+      return '<video class="chat-attachment-video" controls src="' + escapeHtml(att.url) + '"></video>';
+    }
+    return '<img class="chat-attachment-img" src="' + escapeHtml(att.url) + '" />';
+  }).join('');
+}
+
+function renderChatActions(m) {
+  const mid = getChatMessageId(m);
+  if (!mid) return '';
+  const isMine = getChatAuthorId(m) === getChatMeId();
+  const isAdmin = String(currentWorker?.id || '') === String(ADMIN_ID);
+  const canEdit = isAdmin || isMine;
+  const canDeleteAll = isAdmin || isMine;
+
+  let html = '';
+  if (canEdit) {
+    html += '<button class="chat-msg-action-btn" onclick="openChatEditModalById(\'' + mid + '\')" title="Изменить/управлять">✏️</button>';
+  }
+  html += '<button class="chat-msg-action-btn" onclick="deleteChatMessageMeById(\'' + mid + '\')" title="Удалить только у себя">🗑️</button>';
+  if (canDeleteAll) {
+    html += '<button class="chat-msg-action-btn" onclick="deleteChatMessageAllById(\'' + mid + '\')" title="Удалить для всех">🗑️🔥</button>';
+  }
+  html += '<button class="chat-msg-action-btn" onclick="copyChatMessageTextById(\'' + mid + '\')" title="Копировать">📋</button>';
+  return html;
+}
+
+function copyChatMessageTextById(mid) {
+  const m = chatMessages.find(x => getChatMessageId(x) === String(mid));
+  if (!m) return;
+  const text = getChatMessageText(m) || '';
+  navigator.clipboard.writeText(text).then(() => showToast('📋 Скопировано', 'success')).catch(() => showToast('Не удалось скопировать', 'warn'));
+}
+
+function deleteChatMessageAllById(mid) {
+  deleteChatMessageAll(mid);
+}
+
+function deleteChatMessageMeById(mid) {
+  deleteChatMessageMe(mid);
+}
+
+async function syncChatFromServer() {
+  if (chatSyncInFlight) return;
+  chatSyncInFlight = true;
+  try {
+    // Эндпоинт нужно реализовать позже: GET /api/chat?limit=100
+    const res = await apiCall('GET', '/api/chat?limit=100');
+    if (res && !res.error && (Array.isArray(res) || Array.isArray(res.messages))) {
+      const msgs = Array.isArray(res) ? res : res.messages;
+      chatMessages = msgs.map(normalizeChatMessage).slice(-100);
+      // Обновим кеш локально.
+      try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages)); } catch (e) {}
+    }
+  } finally {
+    chatSyncInFlight = false;
+  }
+}
+
+async function loadChat() {
+  // Local first: быстрое отображение, чтобы не было пусто.
+  try {
+    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (saved) chatMessages = JSON.parse(saved);
+  } catch (e) {}
+
+  loadChatHiddenIds();
+  renderChat();
+
+  // Подтянем общий чат (если сервер уже готов)
+  await syncChatFromServer();
+  renderChat();
+
+  // Polling: чтобы видеть сообщения других людей.
+  if (!chatPollingID) {
+    chatPollingID = setInterval(() => {
+      const chatPage = document.getElementById('chat-page');
+      if (!chatPage || chatPage.classList.contains('hidden')) return;
+      syncChatFromServer().then(() => renderChat()).catch(() => {});
+    }, 4000);
+  }
+
+  if (!chatPasteHandlersAttached) {
+    const input = document.getElementById('chat-input');
+    if (input) input.addEventListener('paste', handleChatPaste);
+    chatPasteHandlersAttached = true;
+  }
+}
+
+function renderChat() {
+  const container = document.getElementById('chat-messages');
+  if (!container) return;
+
+  if (!chatMessages || !chatMessages.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;font-size:12px;color:var(--muted)">Чат пуст. Напишите первое сообщение!</div>';
+    return;
+  }
+
+  loadChatHiddenIds();
+  const myId = getChatMeId();
+  const visible = chatMessages
+    .filter(m => !chatHiddenIds.has(getChatMessageId(m)))
+    .slice(-80);
+
+  if (!visible.length) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;font-size:12px;color:var(--muted)">Нет видимых сообщений</div>';
+    return;
+  }
+
+  container.innerHTML = visible.map(m => {
+    const mid = getChatMessageId(m);
+    const authorId = getChatAuthorId(m);
+    const isMine = String(authorId) === String(myId);
+    const name = escapeHtml(getChatAuthorName(m) || 'Рабочий');
+    const text = escapeHtml(getChatMessageText(m) || '');
+    const time = escapeHtml(getChatMessageTime(m) || '');
+    const initials = escapeHtml(getInitials(getChatAuthorName(m) || ''));
+    const actions = renderChatActions(m);
+    const attachments = renderChatAttachments(m);
+
+    return '<div class="chat-msg ' + (isMine ? 'mine' : 'other') + '" data-mid="' + escapeHtml(mid) + '">' +
+      '<div class="chat-msg-header">' +
+        '<div class="chat-avatar-sm" onclick="viewWorkerProfileById(\'' + escapeHtml(authorId) + '\')" title="Открыть профиль">' + initials + '</div>' +
+        (isMine ? '' : '<div class="chat-msg-name">' + name + '</div>') +
+        '<div class="chat-msg-actions">' + actions + '</div>' +
+      '</div>' +
+      (text ? '<div style="white-space:pre-wrap;word-break:break-word">' + text + '</div>' : '') +
+      attachments +
+      (time ? '<div class="chat-msg-time">' + time + '</div>' : '') +
+    '</div>';
+  }).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendChatMsg() {
+  const input = document.getElementById('chat-input');
+  const text = (input?.value || '').trim();
+  if (!currentWorker) return;
+  if (!text && !chatPendingFiles.length) return;
+
+  if (input) input.disabled = true;
+  try {
+    let attachments = [];
+    if (chatPendingFiles.length) {
+      const uploaded = [];
+      for (const f of chatPendingFiles) uploaded.push(await uploadChatFile(f));
+      attachments = uploaded.map(u => ({
+        url: u.url,
+        type: (u.type || '').toLowerCase().includes('video') ? 'video' : 'image'
+      }));
+    }
+
+    // Серверный общий чат (нужно реализовать позже)
+    const res = await apiCall('POST', '/api/chat', {
+      text,
+      attachments,
+      worker_id: currentWorker.id,
+      worker_name: currentWorker.name || 'Рабочий'
+    });
+
+    if (res && res.ok && res.message) {
+      chatMessages.push(normalizeChatMessage(res.message));
+      chatMessages = chatMessages.slice(-100);
+      try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages)); } catch (e) {}
+      if (input) input.value = '';
+      chatPendingFiles = [];
+      renderChatAttachPreview();
+      renderChat();
+      return;
+    }
+
+    // Fallback: локально
+    const now = new Date();
+    const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    chatMessages.push({
+      id: String(Date.now()),
+      uid: currentWorker.id,
+      name: currentWorker.name || 'Рабочий',
+      text,
+      time: timeStr,
+      attachments
+    });
+    if (chatMessages.length > 100) chatMessages = chatMessages.slice(-100);
+    try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages)); } catch (e) {}
+    if (input) input.value = '';
+    chatPendingFiles = [];
+    renderChatAttachPreview();
+    renderChat();
+  } finally {
+    if (input) input.disabled = false;
+  }
+}
+
+function openChatEditModalById(mid) {
+  if (!mid) return;
+  const m = chatMessages.find(x => getChatMessageId(x) === String(mid));
+  if (!m) return;
+
+  chatEditMessage = m;
+  document.getElementById('chat-edit-id').value = String(mid);
+  document.getElementById('chat-edit-text').value = getChatMessageText(m) || '';
+
+  const isMine = getChatAuthorId(m) === getChatMeId();
+  const isAdmin = String(currentWorker?.id || '') === String(ADMIN_ID);
+  const canEdit = isAdmin || isMine;
+  const canDeleteAll = isAdmin || isMine;
+
+  document.getElementById('chat-edit-btn-save').classList.toggle('hidden', !canEdit);
+  document.getElementById('chat-edit-btn-del-all').classList.toggle('hidden', !canDeleteAll);
+  document.getElementById('chat-edit-btn-del-me').classList.remove('hidden');
+  document.getElementById('chat-edit-btn-copy').classList.remove('hidden');
+
+  document.getElementById('modal-chat-edit').classList.remove('hidden');
+}
+
+function copyChatEditText() {
+  const txt = (document.getElementById('chat-edit-text')?.value || '');
+  navigator.clipboard.writeText(txt).then(() => showToast('📋 Скопировано', 'success')).catch(() => showToast('Не удалось скопировать', 'warn'));
+}
+
+async function saveChatEdit() {
+  const id = document.getElementById('chat-edit-id').value;
+  const newText = (document.getElementById('chat-edit-text').value || '').trim();
+  if (!id) return;
+
+  const res = await apiCall('PATCH', '/api/chat?id=' + encodeURIComponent(id), { text: newText });
+  if (res && res.ok) {
+    closeModal('modal-chat-edit');
+    showToast('✅ Изменено', 'success');
+    await syncChatFromServer();
+    renderChat();
+    return;
+  }
+
+  // fallback
+  if (chatEditMessage) chatEditMessage.text = newText;
+  try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages)); } catch (e) {}
+  closeModal('modal-chat-edit');
+  showToast('✅ Локально изменено', 'success');
+  renderChat();
+}
+
+async function deleteChatMessageAll(midOverride) {
+  const mid = midOverride || document.getElementById('chat-edit-id').value;
+  if (!mid) return;
+
+  const res = await apiCall('DELETE', '/api/chat?id=' + encodeURIComponent(mid) + '&scope=all');
+  if (res && res.ok) {
+    showToast('🗑️ Удалено для всех', 'success');
+    chatMessages = chatMessages.filter(x => getChatMessageId(x) !== String(mid));
+    try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages)); } catch (e) {}
+    closeModal('modal-chat-edit');
+    await syncChatFromServer();
+    renderChat();
+    return;
+  }
+
+  // fallback local delete
+  chatMessages = chatMessages.filter(x => getChatMessageId(x) !== String(mid));
+  try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages)); } catch (e) {}
+  closeModal('modal-chat-edit');
+  showToast('🗑️ Локально удалено', 'success');
+  renderChat();
+}
+
+async function deleteChatMessageMe(midOverride) {
+  const mid = midOverride || document.getElementById('chat-edit-id').value;
+  if (!mid) return;
+
+  chatHiddenIds.add(String(mid));
+  persistChatHiddenIds();
+  renderChat();
+
+  const res = await apiCall('DELETE', '/api/chat?id=' + encodeURIComponent(mid) + '&scope=me');
+  if (res && res.ok) showToast('🗑️ Удалено (у вас)', 'success');
+  else showToast('🗑️ Удалено только у вас (локально)', 'warn');
+
+  closeModal('modal-chat-edit');
+}
+
+// profile by id (для клика по аватарке в чате)
+async function viewWorkerProfileById(workerId) {
+  if (!workerId) return;
+  try {
+    const data = await apiCall('GET', '/api/worker-auth?list=1');
+    if (!data || !Array.isArray(data)) return;
+    const idx = data.findIndex(w => String(w.id) === String(workerId));
+    if (idx < 0) return;
+    const w = data[idx];
+    const rank = getRank(w.stars || 0);
+    const prog = getProgress(w.stars || 0);
+    const content = document.getElementById('wp-view-content');
+    content.innerHTML =
+      '<div style="text-align:center;margin-bottom:16px">'
+      +'<div class="wp-avatar" style="width:64px;height:64px;font-size:22px;margin:0 auto 10px">' + getInitials(w.name) + '</div>'
+      +'<div style="font-size:18px;font-weight:800;color:#fff">' + escapeHtml(w.name || 'Рабочий') + '</div>'
+      +(w.telegram_username ? '<div style="font-size:12px;color:var(--accent)">@' + escapeHtml(w.telegram_username) + '</div>' : '')
+      +'<div class="rank-pill" style="margin-top:8px">' + rank.name + '</div>'
+      +'</div>'
+      +'<div class="stats-grid" style="margin-bottom:16px">'
+      +'<div class="stat-box"><div class="stat-val">'+(w.total_orders||0)+'</div><div class="stat-lbl">Заявок</div></div>'
+      +'<div class="stat-box"><div class="stat-val">'+(w.stars||0)+'⭐</div><div class="stat-lbl">Звёзд</div></div>'
+      +'<div class="stat-box"><div class="stat-val">#'+(idx+1)+'</div><div class="stat-lbl">Место</div></div>'
+      +'</div>'
+      +'<div class="progress-wrap"><div class="progress-labels"><span>'+rank.name+'</span><span>'+(prog.nextName!=='Максимум'?prog.nextName+' →':'👑 Макс')+'</span></div>'
+      +'<div class="progress-bar"><div class="progress-fill" style="width:'+prog.pct+'%"></div></div></div>';
+    document.getElementById('modal-worker-profile').classList.remove('hidden');
+  } catch (e) {}
+}
+
 // ── РЕФЕРАЛЬНЫЙ КОД РАБОЧЕГО ──
 function generateWorkerRefCode() {
   if (!currentWorker) return '—';
@@ -1261,7 +1889,7 @@ function copyWorkerRef() {
 }
 
 // INIT
-window.addEventListener('load',()=>{setTimeout(()=>{document.getElementById('splash').classList.add('hidden');document.getElementById('auth-page').classList.remove('hidden')},1800)});
+window.addEventListener('load',()=>{setTimeout(()=>{document.getElementById('splash').classList.add('hidden');initEntryFlow()},1800)});
 </script>
 </body>
 </html>
