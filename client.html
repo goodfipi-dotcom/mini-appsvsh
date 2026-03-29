@@ -144,6 +144,47 @@ body {
 .adv-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
 
 /* ── FORM SECTION ── */
+
+/* ── PRICES ── */
+.prices { padding: 48px 20px; max-width: 900px; margin: 0 auto; }
+.prices-title { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 1px; text-align: center; margin-bottom: 8px; color: var(--text); }
+.prices-sub { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 32px; line-height: 1.6; }
+.price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.price-card {
+  background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
+  padding: 28px 24px; text-align: center; transition: all .25s; position: relative; overflow: hidden; cursor: pointer;
+}
+.price-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.price-card.selected { border-color: var(--accent); background: #f0f9ff; }
+.price-card.selected::after {
+  content: '✓'; position: absolute; top: 12px; right: 14px;
+  background: var(--accent); color: white; width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;
+}
+.price-emoji { font-size: 40px; margin-bottom: 12px; }
+.price-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--text); margin-bottom: 8px; }
+.price-amount { font-size: 28px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+.price-unit { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.price-details { font-size: 13px; color: var(--muted); line-height: 1.6; text-align: left; }
+.price-details b { color: var(--text); }
+.price-badge { display: inline-block; background: #dcfce7; color: #16a34a; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 100px; margin-top: 12px; }
+.prices-note { text-align: center; font-size: 13px; color: var(--muted); margin-top: 20px; padding: 14px; background: #f0f9ff; border-radius: 12px; border: 1px solid #bfdbfe; }
+.prices-note b { color: #1e40af; }
+
+/* ── CATEGORY SELECT IN FORM ── */
+.cat-select { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.cat-btn {
+  flex: 1; min-width: 100px; padding: 12px 8px; border-radius: 12px; border: 1.5px solid var(--border);
+  background: var(--bg); font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+  color: var(--muted); cursor: pointer; text-align: center; transition: all .2s;
+}
+.cat-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cat-btn.active { background: #f0f9ff; border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.cat-btn .cat-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.cat-dot.green { background: #22c55e; }
+.cat-dot.blue { background: #3b82f6; }
+.cat-dot.yellow { background: #eab308; }
+
 .form-section {
   padding: 60px 20px 80px;
   max-width: 560px;
@@ -453,12 +494,65 @@ textarea.form-input { height: 100px; resize: none; }
   </div>
 </section>
 
+<!-- PRICES -->
+<section class="prices" id="prices">
+  <div class="prices-title">💰 Наши цены</div>
+  <div class="prices-sub">Мы держим цены ниже рынка за счёт прямой работы без посредников</div>
+  <div class="price-grid">
+    <div class="price-card" onclick="selectCategory(this, 'Грузчики')">
+      <div class="price-emoji">📦</div>
+      <div class="price-name">Грузчики</div>
+      <div class="price-amount">от 800 ₽</div>
+      <div class="price-unit">за час работы</div>
+      <div class="price-details">
+        <b>Переезды, погрузка, разгрузка</b><br>
+        +100 ₽/час — тяжёлая работа<br>
+        +100 ₽/час — подъём на этаж / сложные условия
+      </div>
+      <div class="price-badge">Дешевле Авито</div>
+    </div>
+    <div class="price-card" onclick="selectCategory(this, 'Разнорабочие')">
+      <div class="price-emoji">🔨</div>
+      <div class="price-name">Разнорабочие</div>
+      <div class="price-amount">договорная</div>
+      <div class="price-unit">согласовывается заранее</div>
+      <div class="price-details">
+        <b>Участок, фундамент, копка, стройка</b><br>
+        Стоимость обсуждается по телефону<br>
+        Всегда в рамках честной цены
+      </div>
+      <div class="price-badge">Без накруток</div>
+    </div>
+    <div class="price-card" onclick="selectCategory(this, 'Мастер на час')">
+      <div class="price-emoji">🔧</div>
+      <div class="price-name">Мастер на час</div>
+      <div class="price-amount">договорная</div>
+      <div class="price-unit">индивидуально</div>
+      <div class="price-details">
+        <b>Мелкий ремонт, бытовые задачи</b><br>
+        Сантехника, электрика, сборка мебели<br>
+        Стоимость обсуждается индивидуально
+      </div>
+      <div class="price-badge">Быстрый выезд</div>
+    </div>
+  </div>
+  <div class="prices-note">💡 <b>Итоговая цена</b> зависит от условий, но всегда остаётся <b>ниже рынка</b>. Без посредников — вы платите напрямую исполнителю.</div>
+</section>
+
 <!-- FORM -->
 <section class="form-section" id="order">
   <div class="form-section-title">📝 Оставить заявку</div>
   <div class="form-section-sub">Заполните форму — мы свяжемся в течение 15 минут</div>
 
   <div class="form-card" id="form-card">
+    <label class="form-label">Категория услуги *</label>
+    <div class="cat-select">
+      <div class="cat-btn active" onclick="pickCat(this,'Грузчики')"><span class="cat-dot green"></span>Грузчики</div>
+      <div class="cat-btn" onclick="pickCat(this,'Разнорабочие')"><span class="cat-dot blue"></span>Разнорабочие</div>
+      <div class="cat-btn" onclick="pickCat(this,'Мастер на час')"><span class="cat-dot yellow"></span>Мастер</div>
+    </div>
+    <input type="hidden" id="f-category" value="Грузчики">
+
     <label class="form-label">Ваше имя *</label>
     <input type="text" class="form-input" id="f-name" placeholder="Как к вам обращаться?">
 
@@ -629,6 +723,34 @@ textarea.form-input { height: 100px; resize: none; }
   </div>
 </section>
 
+<!-- PORTFOLIO (всегда видно) -->
+<section class="advantages" id="portfolio">
+  <div class="advantages-title">🏗️ Наши работы</div>
+  <div class="adv-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+    <div class="adv-card" style="padding:0;overflow:hidden;border-radius:18px">
+      <div style="height:180px;background:url('img/portfolio-1.jpg') center/cover"></div>
+      <div style="padding:16px"><div class="adv-name">📦 Грузчики VSH</div><div class="adv-desc">Погрузка, разгрузка, переезды — быстро и аккуратно</div></div>
+    </div>
+    <div class="adv-card" style="padding:0;overflow:hidden;border-radius:18px">
+      <div style="height:180px;background:url('img/portfolio-2.jpg') center/cover"></div>
+      <div style="padding:16px"><div class="adv-name">🔨 Ремонт и отделка</div><div class="adv-desc">Покраска, шпаклёвка, поклейка — профессиональный подход</div></div>
+    </div>
+    <div class="adv-card" style="padding:0;overflow:hidden;border-radius:18px">
+      <div style="height:180px;background:url('img/portfolio-3.jpg') center/cover"></div>
+      <div style="padding:16px"><div class="adv-name">🏗️ Тяжёлые работы</div><div class="adv-desc">Техника, трубы, стройматериалы — опытные бригады</div></div>
+    </div>
+    <div class="adv-card" style="padding:0;overflow:hidden;border-radius:18px">
+      <div style="height:180px;background:url('img/portfolio-4.jpg') center/cover"></div>
+      <div style="padding:16px"><div class="adv-name">👷 Строительство</div><div class="adv-desc">Бетонные работы, кладка, фундаменты</div></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:20px">
+    <a href="https://www.avito.ru/user/f90f447fcf02e67ef5b825f68206711d/profile?src=sharing" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#f0f9ff;border:1px solid #bfdbfe;border-radius:100px;color:#2563eb;text-decoration:none;font-weight:600;font-size:14px;transition:all .2s">
+      ⭐ Наши отзывы на Авито
+    </a>
+  </div>
+</section>
+
 <!-- FOOTER -->
 <footer class="footer">
   <div class="footer-logo">VSH<span>.</span></div>
@@ -645,6 +767,7 @@ async function submitOrder() {
   const city    = document.getElementById('f-city').value;
   const task    = document.getElementById('f-task').value.trim();
   const address = document.getElementById('f-address').value.trim();
+  const category = document.getElementById('f-category')?.value || 'Грузчики';
   const msgEl   = document.getElementById('f-msg');
   const btn     = document.getElementById('f-btn');
 
@@ -676,22 +799,27 @@ async function submitOrder() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         source: 'client',
-        name, phone, city, task, address
+        name, phone, city, task, address,
+        service: category + ': ' + task
       })
     });
     const data = await res.json();
 
     if (data.success || data.orderId) {
-      // Скрываем форму, показываем ресепшн
-      document.getElementById('form-card').style.display = 'none';
+      // Показываем подтверждение ПРЯМО НА МЕСТЕ формы (без скролла вверх)
+      document.getElementById('form-card').innerHTML =
+        '<div style="text-align:center;padding:40px 16px">' +
+        '<div style="font-size:56px;margin-bottom:16px">✅</div>' +
+        '<div style="font-family:Bebas Neue,sans-serif;font-size:28px;letter-spacing:1px;color:#0f172a;margin-bottom:8px">Заявка отправлена!</div>' +
+        '<p style="font-size:15px;color:#64748b;margin-bottom:24px;line-height:1.6">Мы свяжемся с вами в ближайшее время.<br>Номер заявки: <b>#' + data.orderId + '</b></p>' +
+        '<button class="form-btn" onclick="location.reload()" style="max-width:280px;margin:0 auto">📝 Оставить ещё заявку</button>' +
+        '</div>';
+
+      // Показываем reception ниже (профиль, рефералка, портфолио)
       document.getElementById('reception').classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // Регистрируем клиента и загружаем профиль
+      // Регистрируем клиента
       registerClient(name, phone, city);
-
-      // Очищаем форму на случай повторного использования
-      ['f-name', 'f-phone', 'f-task', 'f-address'].forEach(id => document.getElementById(id).value = '');
     } else {
       throw new Error(data.error || 'Неизвестная ошибка');
     }
@@ -703,6 +831,26 @@ async function submitOrder() {
 
   btn.disabled = false;
   btn.textContent = '📝 Отправить заявку';
+}
+
+// Выбор категории в форме
+function pickCat(el, cat) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('f-category').value = cat;
+}
+
+// Выбор категории из карточек цен
+function selectCategory(el, cat) {
+  document.querySelectorAll('.price-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  // Обновляем кнопку в форме
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(cat.substring(0, 5)));
+  });
+  document.getElementById('f-category').value = cat;
+  // Скроллим к форме
+  document.getElementById('order').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Маска телефона
