@@ -2,944 +2,1032 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>VSH Service</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VSH Service — Заказать рабочих</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#060810;--surface:#0c0f1a;--card:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);
-  --accent:#38bdf8;--gold:#f59e0b;--silver:#94a3b8;--bronze:#cd7c3a;
-  --success:#10b981;--danger:#f87171;--warn:#fb923c;--text:#e2e8f0;--muted:#475569;
+  --bg: #f8f9fb;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #0ea5e9;
+  --accent-dark: #0284c7;
+  --accent-light: #e0f2fe;
+  --success: #10b981;
+  --danger: #ef4444;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.08);
+  --radius: 16px;
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow-x:hidden}
-body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
-body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(56,189,248,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,0.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
-.page{position:relative;z-index:1;min-height:100vh;padding-bottom:80px}
-.hidden{display:none!important}
-@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(56,189,248,.3)}50%{box-shadow:0 0 40px rgba(56,189,248,.6)}}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
-@keyframes rankUp{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
 
-/* SPLASH */
-#splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px}
-.splash-logo{font-family:'Bebas Neue',sans-serif;font-size:80px;letter-spacing:6px;color:#fff;animation:glow 2s infinite}
-.splash-logo span{color:var(--accent)}
-.splash-tagline{font-size:12px;color:var(--muted);letter-spacing:3px;text-transform:uppercase}
-.splash-loader{width:40px;height:40px;border-radius:50%;border:3px solid rgba(56,189,248,.15);border-top-color:var(--accent);animation:spin .8s linear infinite;margin-top:8px}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
 
-/* AUTH */
-#auth-page{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
-.auth-card{width:100%;max-width:340px;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:36px 24px;text-align:center;animation:fadeUp .5s ease both}
-.auth-logo{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:3px;color:#fff;margin-bottom:4px}
-.auth-logo span{color:var(--accent)}
-.auth-sub{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:1.6}
-.pin-display{display:flex;gap:14px;justify-content:center;margin-bottom:28px}
-.pin-dot{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.08);border:2px solid var(--border);transition:all .2s}
-.pin-dot.filled{background:var(--accent);border-color:var(--accent);box-shadow:0 0 12px rgba(56,189,248,.5)}
-.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.num-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:14px;padding:16px;font-size:22px;font-weight:700;color:#fff;cursor:pointer;transition:all .15s;font-family:'Manrope',sans-serif}
-.num-btn:active{transform:scale(.93);background:rgba(56,189,248,.2);border-color:var(--accent)}
-.num-btn.del{font-size:16px;color:var(--muted)}
-.auth-error{color:var(--danger);font-size:13px;margin-top:8px;display:none;animation:shake .3s ease}
-.auth-error.show{display:block}
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(135deg, rgba(12,74,110,0.92) 0%, rgba(3,105,161,0.88) 40%, rgba(14,165,233,0.85) 100%),
+              url('img/portfolio-1.jpg') center/cover no-repeat;
+  color: white;
+  padding: 0 20px;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+}
+.hero-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 64px;
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+  animation: fadeUp .6s ease both;
+}
+.hero-logo span { color: #7dd3fc; }
+.hero-tagline {
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 32px;
+  animation: fadeUp .6s .1s ease both;
+}
+.hero-title {
+  font-size: clamp(28px, 5vw, 44px);
+  font-weight: 800;
+  line-height: 1.2;
+  max-width: 600px;
+  margin-bottom: 16px;
+  animation: fadeUp .6s .2s ease both;
+}
+.hero-sub {
+  font-size: 17px;
+  font-weight: 400;
+  opacity: 0.85;
+  max-width: 480px;
+  line-height: 1.6;
+  margin-bottom: 36px;
+  animation: fadeUp .6s .3s ease both;
+}
+.hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  color: #0369a1;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 16px 36px;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .2s;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  animation: fadeUp .6s .4s ease both;
+}
+.hero-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
 
-/* BOTTOM NAV */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(6,8,16,.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:8px 0 env(safe-area-inset-bottom,8px)}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;cursor:pointer;transition:all .2s;color:var(--muted)}
-.nav-item.active{color:var(--accent)}
-.nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
-.nav-label{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
-.nav-icon-wrap{position:relative}
-.nav-badge{position:absolute;top:-5px;right:-8px;background:var(--danger);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+/* ── ADVANTAGES ── */
+.advantages {
+  padding: 60px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.advantages-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 40px;
+  color: var(--text);
+}
+.adv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+.adv-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  box-shadow: var(--shadow);
+  transition: all .2s;
+}
+.adv-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.adv-icon { font-size: 36px; margin-bottom: 14px; }
+.adv-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.adv-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
 
-/* HEADER */
-.app-header{padding:20px 16px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.header-logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#fff}
-.header-logo span{color:var(--accent)}
-.worker-chip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:100px;padding:6px 12px}
-.chip-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
-.chip-rank{font-size:11px;font-weight:700;color:var(--accent);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ── FORM SECTION ── */
 
-/* CARDS */
-.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:12px}
-.section-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:#fff;margin-bottom:14px}
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:12px;padding:14px;width:100%;font-family:'Manrope',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:all .15s;letter-spacing:.5px}
-.btn:active{transform:scale(.97)}
-.btn-primary{background:var(--accent);color:#060810}
-.btn-outline{background:transparent;border:1px solid var(--accent);color:var(--accent)}
-.btn-success{background:var(--success);color:#fff}
-.btn-danger{background:rgba(248,113,113,.12);color:var(--danger);border:1px solid rgba(248,113,113,.25)}
-.btn-sm{padding:10px 14px;font-size:13px;border-radius:10px}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
-.input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-family:'Manrope',sans-serif;font-size:15px;font-weight:500;outline:none;transition:border-color .2s;margin-bottom:10px}
-.input:focus{border-color:rgba(56,189,248,.5)}
-.input::placeholder{color:var(--muted);font-size:14px}
-textarea.input{height:80px;resize:none}
-.input-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px;display:block}
+/* ── PRICES ── */
+.prices { padding: 48px 20px; max-width: 900px; margin: 0 auto; }
+.prices-title { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 1px; text-align: center; margin-bottom: 8px; color: var(--text); }
+.prices-sub { font-size: 14px; color: var(--muted); text-align: center; margin-bottom: 32px; line-height: 1.6; }
+.price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.price-card {
+  background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
+  padding: 28px 24px; text-align: center; transition: all .25s; position: relative; overflow: hidden; cursor: pointer;
+}
+.price-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.price-card.selected { border-color: var(--accent); background: #f0f9ff; }
+.price-card.selected::after {
+  content: '✓'; position: absolute; top: 12px; right: 14px;
+  background: var(--accent); color: white; width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;
+}
+.price-emoji { font-size: 40px; margin-bottom: 12px; }
+.price-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--text); margin-bottom: 8px; }
+.price-amount { font-size: 28px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+.price-unit { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.price-details { font-size: 13px; color: var(--muted); line-height: 1.6; text-align: left; }
+.price-details b { color: var(--text); }
+.price-badge { display: inline-block; background: #dcfce7; color: #16a34a; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 100px; margin-top: 12px; }
+.prices-note { text-align: center; font-size: 13px; color: var(--muted); margin-top: 20px; padding: 14px; background: #f0f9ff; border-radius: 12px; border: 1px solid #bfdbfe; }
+.prices-note b { color: #1e40af; }
 
-/* ORDER CARDS */
-.order-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:12px;animation:fadeUp .4s ease both;position:relative;overflow:hidden}
-.order-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:2px}
-.order-card.urgent::before{background:var(--warn);animation:pulse 1s infinite}
-.order-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-.order-city{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:3px}
-.order-city.urgent-tag{color:var(--warn)}
-.order-title{font-size:16px;font-weight:700;color:#fff;line-height:1.3}
-.order-time{font-size:11px;color:var(--muted);background:rgba(255,255,255,.05);border-radius:8px;padding:4px 8px;white-space:nowrap}
-.order-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.meta-tag{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.05);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--text)}
-.order-phone-lock{display:flex;align-items:center;gap:8px;background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.15);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--accent);font-weight:600;margin-bottom:12px}
-.empty-state{text-align:center;padding:60px 20px;animation:fadeIn .5s ease}
-.empty-icon{font-size:48px;margin-bottom:12px;opacity:.4}
-.empty-title{font-size:15px;font-weight:700;color:var(--muted);margin-bottom:6px}
-.empty-sub{font-size:13px;color:var(--muted);opacity:.6}
+/* ── CATEGORY SELECT IN FORM ── */
+.cat-select { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.cat-btn {
+  flex: 1; min-width: 100px; padding: 12px 8px; border-radius: 12px; border: 1.5px solid var(--border);
+  background: var(--bg); font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+  color: var(--muted); cursor: pointer; text-align: center; transition: all .2s;
+}
+.cat-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cat-btn.active { background: #f0f9ff; border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.cat-btn .cat-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.cat-dot.green { background: #22c55e; }
+.cat-dot.blue { background: #3b82f6; }
+.cat-dot.yellow { background: #eab308; }
 
-/* PROFILE */
-.profile-hero{background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(99,102,241,.08));border:1px solid rgba(56,189,248,.15);border-radius:20px;padding:24px;text-align:center;margin-bottom:12px;animation:fadeUp .4s ease both}
-.profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;margin:0 auto 12px;box-shadow:0 0 0 4px rgba(56,189,248,.2)}
-.profile-name{font-size:20px;font-weight:800;color:#fff;margin-bottom:6px}
-.rank-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:100px;padding:5px 14px;font-size:13px;font-weight:700;color:var(--gold);margin-bottom:16px}
-.progress-wrap{margin-bottom:4px}
-.progress-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600}
-.progress-bar{height:6px;background:rgba(255,255,255,.07);border-radius:100px;overflow:hidden}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#818cf8);border-radius:100px;transition:width 1s ease}
-.progress-hint{font-size:11px;color:var(--muted);margin-top:5px;text-align:right}
-.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
-.stat-box{background:rgba(255,255,255,.04);border-radius:12px;padding:12px 8px;text-align:center}
-.stat-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);letter-spacing:1px}
-.stat-lbl{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.form-section {
+  padding: 60px 20px 80px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.form-section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.form-section-sub {
+  font-size: 15px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 36px;
+}
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  box-shadow: var(--shadow-lg);
+}
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.form-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  margin-bottom: 16px;
+}
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(14,165,233,0.1);
+}
+.form-input::placeholder { color: #94a3b8; }
+textarea.form-input { height: 100px; resize: none; }
+.form-select {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  outline: none;
+  margin-bottom: 16px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6l3.5 4 3.5-4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+.form-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--accent);
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  margin-top: 8px;
+}
+.form-btn:hover { background: var(--accent-dark); }
+.form-btn:active { transform: scale(0.98); }
+.form-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ACHIEVEMENTS */
-.ach-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ach-item{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;transition:all .2s}
-.ach-item.earned{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3)}
-.ach-icon{font-size:28px;margin-bottom:8px;filter:grayscale(1);opacity:.4;transition:all .3s}
-.ach-item.earned .ach-icon{filter:none;opacity:1}
-.ach-name{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
-.ach-item.earned .ach-name{color:#fff}
-.ach-desc{font-size:11px;color:var(--muted);line-height:1.4}
-.ach-item.earned .ach-desc{color:var(--gold)}
+/* ── SUCCESS / ERROR ── */
+.form-msg {
+  text-align: center;
+  padding: 24px;
+  border-radius: 12px;
+  margin-top: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  display: none;
+}
+.form-msg.success { display: block; background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; }
+.form-msg.error { display: block; background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
 
-/* LEADERBOARD */
-.lb-header-card{background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(56,189,248,.05));border:1px solid rgba(245,158,11,.2);border-radius:20px;padding:20px;text-align:center;margin-bottom:14px}
-.lb-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:#fff}
-.lb-sub{font-size:12px;color:var(--muted);margin-top:4px}
-.lb-item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 15px;margin-bottom:8px;animation:fadeUp .4s ease both}
-.lb-item.me{border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.05)}
-.lb-item.top1{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.05)}
-.lb-pos{font-family:'Bebas Neue',sans-serif;font-size:20px;width:26px;text-align:center;flex-shrink:0}
-.pos-gold{color:var(--gold)}.pos-silver{color:var(--silver)}.pos-bronze{color:var(--bronze)}
-.lb-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
-.lb-info{flex:1;min-width:0}
-.lb-name{font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lb-username{font-size:11px;color:var(--accent);opacity:.7}
-.lb-rank-tag{font-size:11px;color:var(--muted);margin-top:2px}
-.lb-score{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold)}
+/* ── FOOTER ── */
+.footer {
+  background: #0f172a;
+  color: #94a3b8;
+  text-align: center;
+  padding: 32px 20px;
+  font-size: 13px;
+}
+.footer a { color: #7dd3fc; text-decoration: none; }
+.footer-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: white;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+.footer-logo span { color: #38bdf8; }
 
-/* ADMIN */
-.admin-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:100px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--gold)}
-.city-tabs{display:flex;gap:8px;margin-bottom:14px}
-.city-tab{flex:1;padding:10px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;text-align:center;transition:all .2s}
-.city-tab.active{background:rgba(56,189,248,.12);border-color:var(--accent);color:var(--accent)}
-.worker-list-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer}
-.worker-list-item:last-child{border-bottom:none}
-.wli-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
-.wli-info{flex:1}
-.wli-name{font-size:14px;font-weight:700;color:#fff}
-.wli-rank{font-size:11px;color:var(--muted)}
-.wli-score{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold)}
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+@keyframes checkPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+.hidden { display: none !important; }
 
-/* ADMIN ORDERS LIST */
-.admin-order-item{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
-.admin-order-info{flex:1;min-width:0}
-.admin-order-title{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.admin-order-sub{font-size:11px;color:var(--muted);margin-top:2px}
-.admin-order-del{width:36px;height:36px;border-radius:10px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:var(--danger);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
-.admin-order-del:active{transform:scale(.9);background:rgba(248,113,113,.25)}
-.admin-order-actions{display:flex;gap:6px;flex-shrink:0}
-.admin-order-btn{width:36px;height:36px;border-radius:10px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;border:none;transition:all .15s}
-.admin-order-btn:active{transform:scale(.9)}
-.admin-order-btn.approve{background:rgba(16,185,129,.12);color:var(--success)}
-.admin-order-btn.edit{background:rgba(56,189,248,.12);color:var(--accent)}
-.admin-order-btn.del{background:rgba(248,113,113,.1);color:var(--danger)}
-.admin-order-detail{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
-.admin-order-detail span{color:var(--text)}
-.admin-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin:16px 0 8px;padding-left:4px}
-.admin-section-label.waiting{color:var(--warn)}
-.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.status-published{background:var(--success)}
-.status-accepted{background:var(--warn)}
-.status-waiting{background:var(--muted)}
+/* ── RECEPTION ── */
+.reception { padding: 0 0 40px; animation: fadeIn .5s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.reception-hero {
+  background: linear-gradient(135deg, #064e3b 0%, #059669 50%, #34d399 100%);
+  color: white; text-align: center; padding: 60px 20px;
+  position: relative; overflow: hidden;
+}
+.reception-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.05) 0%, transparent 40%);
+  pointer-events: none;
+}
+.reception-check { font-size: 72px; margin-bottom: 16px; animation: scaleIn .5s ease, checkPulse 2s ease infinite; }
+.reception-title { font-family: 'Bebas Neue', sans-serif; font-size: 40px; letter-spacing: 2px; margin-bottom: 12px; }
+.reception-sub { font-size: 16px; opacity: .85; max-width: 400px; margin: 0 auto 28px; line-height: 1.6; }
 
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:flex-end;animation:fadeIn .2s ease}
-.modal-sheet{width:100%;background:#0d1117;border:1px solid var(--border);border-radius:24px 24px 0 0;padding:20px 20px env(safe-area-inset-bottom,20px);animation:slideUp .3s ease;max-height:90vh;overflow-y:auto}
-.modal-handle{width:40px;height:4px;background:rgba(255,255,255,.12);border-radius:100px;margin:0 auto 20px}
-.modal-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;color:#fff;margin-bottom:14px}
+.reception-about { max-width: 600px; margin: 0 auto; padding: 48px 20px 32px; }
+.reception-section-title {
+  font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1px;
+  text-align: center; color: var(--text); margin-bottom: 20px;
+}
+.reception-text { font-size: 15px; color: var(--muted); line-height: 1.8; text-align: center; margin-bottom: 32px; }
+.reception-features { display: flex; flex-direction: column; gap: 16px; }
+.reception-feature {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px;
+  box-shadow: var(--shadow); animation: fadeUp .5s ease both;
+}
+.reception-feature:nth-child(1) { animation-delay: .1s; }
+.reception-feature:nth-child(2) { animation-delay: .2s; }
+.reception-feature:nth-child(3) { animation-delay: .3s; }
+.reception-feature:nth-child(4) { animation-delay: .4s; }
+.reception-feature:nth-child(5) { animation-delay: .5s; }
+.rf-icon { font-size: 28px; flex-shrink: 0; margin-top: 2px; }
+.rf-text { font-size: 14px; color: var(--muted); line-height: 1.6; }
+.rf-text b { color: var(--text); }
 
-/* TIMER */
-.timer-wrap{display:flex;flex-direction:column;align-items:center;padding:16px 0;margin-bottom:16px}
-.timer-circle{position:relative;width:90px;height:90px}
-.timer-svg{transform:rotate(-90deg);width:90px;height:90px}
-.timer-track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:6}
-.timer-progress{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;stroke-dasharray:240;transition:stroke-dashoffset .9s linear,stroke .5s}
-.timer-progress.urgent{stroke:var(--warn)}
-.timer-progress.critical{stroke:var(--danger)}
-.timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:26px;color:#fff;letter-spacing:1px}
-.timer-label{font-size:12px;color:var(--muted);margin-top:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.reception-portfolio { max-width: 700px; margin: 0 auto; padding: 32px 20px; }
+.portfolio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.portfolio-card {
+  border-radius: 18px; overflow: hidden; position: relative;
+  min-height: 200px; animation: fadeUp .5s ease both;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+.portfolio-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: cover; background-position: center;
+}
+.portfolio-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%);
+}
+.portfolio-content {
+  position: relative; z-index: 1; padding: 24px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  min-height: 200px; color: white;
+}
+.portfolio-emoji { font-size: 40px; margin-bottom: 10px; }
+.portfolio-name { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; margin-bottom: 6px; }
+.portfolio-desc { font-size: 13px; opacity: .8; line-height: 1.5; }
 
-/* RULES */
-.rules-list{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
-.rule-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text);line-height:1.5}
-.rule-num{width:22px;height:22px;border-radius:50%;background:rgba(56,189,248,.12);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.rule-danger{color:var(--danger)!important;background:rgba(248,113,113,.12)!important}
+.reception-cta { text-align: center; padding: 40px 20px 20px; }
 
-/* PHONE */
-.phone-reveal-box{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:16px;padding:20px;text-align:center;margin-bottom:14px}
-.phone-reveal-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:700}
-.phone-reveal-num{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:4px;color:var(--success)}
+/* ── CLIENT PROFILE ── */
+.client-profile { max-width: 600px; margin: 0 auto; padding: 32px 20px; }
+.cp-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 28px; box-shadow: var(--shadow-lg); text-align: center; margin-bottom: 20px;
+}
+.cp-level { font-size: 40px; margin-bottom: 8px; }
+.cp-name { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.cp-level-name { font-size: 14px; color: var(--accent); font-weight: 600; margin-bottom: 16px; }
+.cp-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.cp-stat { background: var(--bg); border-radius: 12px; padding: 14px 8px; }
+.cp-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--accent); }
+.cp-stat-lbl { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.cp-progress { margin-bottom: 16px; }
+.cp-progress-bar { height: 8px; background: #e2e8f0; border-radius: 100px; overflow: hidden; }
+.cp-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #6366f1); border-radius: 100px; transition: width 1s ease; }
+.cp-progress-text { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
-/* STARS */
-.star-row{display:flex;gap:10px;justify-content:center;margin:14px 0}
-.star-btn{font-size:30px;cursor:pointer;transition:all .2s;opacity:.3;filter:grayscale(1)}
-.star-btn.active{opacity:1;filter:none;transform:scale(1.15)}
+/* ── REFERRAL ── */
+.ref-card {
+  background: linear-gradient(135deg, #eff6ff, #f0f9ff); border: 1px solid #bfdbfe;
+  border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 20px;
+}
+.ref-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: #1e40af; margin-bottom: 8px; }
+.ref-sub { font-size: 13px; color: #3b82f6; margin-bottom: 16px; line-height: 1.5; }
+.ref-link-box {
+  display: flex; gap: 8px; margin-bottom: 16px;
+}
+.ref-link-input {
+  flex: 1; padding: 12px; background: white; border: 1.5px solid #93c5fd; border-radius: 10px;
+  font-family: 'Outfit', sans-serif; font-size: 13px; color: #1e40af; font-weight: 600;
+}
+.ref-copy-btn {
+  padding: 12px 16px; background: #2563eb; color: white; border: none; border-radius: 10px;
+  font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.ref-copy-btn:active { transform: scale(.95); }
+.ref-qr { margin: 16px auto; display: block; border-radius: 12px; border: 3px solid white; box-shadow: var(--shadow); }
+.ref-share-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 28px; background: #10b981; color: white; border: none; border-radius: 100px;
+  font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer;
+  margin-top: 12px;
+}
 
-/* TOAST */
-.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:#1e293b;border:1px solid var(--border);border-radius:12px;padding:12px 20px;font-size:14px;font-weight:600;color:#fff;z-index:999;transition:transform .3s ease;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.5)}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.toast.success{border-color:rgba(16,185,129,.4);color:var(--success)}
-.toast.error{border-color:rgba(248,113,113,.4);color:var(--danger)}
-.toast.warn{border-color:rgba(251,146,60,.4);color:var(--warn)}
+/* ── LOYALTY LEVELS ── */
+.loyalty-section { max-width: 600px; margin: 0 auto; padding: 0 20px 32px; }
+.loyalty-grid { display: flex; flex-direction: column; gap: 10px; }
+.loyalty-item {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; transition: all .2s;
+}
+.loyalty-item.current { border-color: var(--accent); background: #f0f9ff; }
+.loyalty-item.locked { opacity: .5; }
+.loyalty-icon { font-size: 28px; flex-shrink: 0; }
+.loyalty-info { flex: 1; }
+.loyalty-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.loyalty-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.loyalty-stars { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--accent); }
 
-/* RANK UP */
-.rankup-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease}
-.rankup-card{background:linear-gradient(135deg,#0f172a,#1e1b4b);border:2px solid var(--gold);border-radius:24px;padding:40px 32px;text-align:center;max-width:300px;animation:fadeUp .4s ease both}
-.rankup-icon{font-size:64px;margin-bottom:16px;animation:rankUp 1s ease infinite}
-.rankup-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;color:var(--gold);margin-bottom:8px}
-.rankup-rank{font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;margin-bottom:16px}
+/* ── REVIEW FORM ── */
+.review-section { max-width: 600px; margin: 0 auto; padding: 0 20px 32px; }
+.review-stars { display: flex; gap: 8px; justify-content: center; margin: 12px 0; }
+.review-star { font-size: 32px; cursor: pointer; opacity: .3; filter: grayscale(1); transition: all .2s; }
+.review-star.active { opacity: 1; filter: none; transform: scale(1.1); }
 </style>
 </head>
 <body>
 
-<!-- SPLASH -->
-<div id="splash" class="page">
-  <div class="splash-logo">VSH<span>.</span></div>
-  <div class="splash-tagline">Октябрьский · Туймазы · Работа есть</div>
-  <div class="splash-loader"></div>
-</div>
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-logo">VSH<span>.</span></div>
+  <div class="hero-tagline">Октябрьский · Туймазы</div>
+  <h1 class="hero-title">Рабочие руки за 30 минут</h1>
+  <p class="hero-sub">Грузчики, мастера и разнорабочие — без посредников, по самым честным ценам. Забудьте про Авито и переплаты. Одна заявка — и мы всё организуем.</p>
+  <a href="#order" class="hero-btn">📝 Оставить заявку</a>
+</section>
 
-<!-- AUTH -->
-<div id="auth-page" class="page hidden">
-  <div class="auth-card">
-    <div class="auth-logo">VSH<span>.</span></div>
-    <div class="auth-sub">Введите PIN-код для входа в систему бригад</div>
-    <div class="pin-display">
-      <div class="pin-dot" id="dot-0"></div><div class="pin-dot" id="dot-1"></div>
-      <div class="pin-dot" id="dot-2"></div><div class="pin-dot" id="dot-3"></div>
+<!-- ADVANTAGES -->
+<section class="advantages">
+  <div class="advantages-title">Почему VSH Service?</div>
+  <div class="adv-grid">
+    <div class="adv-card">
+      <div class="adv-icon">⚡</div>
+      <div class="adv-name">Быстро</div>
+      <div class="adv-desc">Подбираем исполнителя за 15 минут. Рабочий перезвонит и приедет в кратчайшие сроки.</div>
     </div>
-    <div class="numpad">
-      <button class="num-btn" onclick="pinInput('1')">1</button><button class="num-btn" onclick="pinInput('2')">2</button><button class="num-btn" onclick="pinInput('3')">3</button>
-      <button class="num-btn" onclick="pinInput('4')">4</button><button class="num-btn" onclick="pinInput('5')">5</button><button class="num-btn" onclick="pinInput('6')">6</button>
-      <button class="num-btn" onclick="pinInput('7')">7</button><button class="num-btn" onclick="pinInput('8')">8</button><button class="num-btn" onclick="pinInput('9')">9</button>
-      <button class="num-btn" style="opacity:.2"></button><button class="num-btn" onclick="pinInput('0')">0</button><button class="num-btn del" onclick="pinDelete()">⌫</button>
+    <div class="adv-card">
+      <div class="adv-icon">💰</div>
+      <div class="adv-name">Честные цены</div>
+      <div class="adv-desc">Никаких посредников и накруток. Самые доступные цены на рынке — забудьте про Авито и переплаты.</div>
     </div>
-    <div class="auth-error" id="auth-error">❌ Неверный PIN-код</div>
+    <div class="adv-card">
+      <div class="adv-icon">⭐</div>
+      <div class="adv-name">Проверенные рабочие</div>
+      <div class="adv-desc">Только крепкие и надёжные исполнители. Система рейтинга и званий — случайных людей не бывает.</div>
+    </div>
+    <div class="adv-card">
+      <div class="adv-icon">🔒</div>
+      <div class="adv-name">Полная прозрачность</div>
+      <div class="adv-desc">Вы сразу видите стоимость работы. Никаких скрытых комиссий и неожиданных доплат.</div>
+    </div>
+    <div class="adv-card">
+      <div class="adv-icon">🏗️</div>
+      <div class="adv-name">Любая задача</div>
+      <div class="adv-desc">Грузчики, разнорабочие, мастера. От одного человека до полной бригады — под любой объём.</div>
+    </div>
+    <div class="adv-card">
+      <div class="adv-icon">📱</div>
+      <div class="adv-name">Умный подбор</div>
+      <div class="adv-desc">Приложение само подбирает рабочую силу. Не нужно обзванивать десятки номеров — одна заявка решает всё.</div>
+    </div>
   </div>
-</div>
+</section>
 
-<!-- MAIN APP -->
-<div id="app" class="hidden">
-  <!-- FEED -->
-  <div id="feed-page" class="page">
-    <div class="app-header">
-      <div class="header-logo">VSH<span>.</span></div>
-      <div class="worker-chip"><div class="chip-avatar" id="header-avatar">?</div><div class="chip-rank" id="header-rank">—</div></div>
-    </div>
-    <div style="padding:0 16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="section-title" style="margin:0">Активные заявки</div>
-        <button class="btn btn-outline btn-sm" style="width:auto;gap:6px" onclick="loadOrders()">
-          <svg width="13" height="13" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-          Обновить
-        </button>
+<!-- PRICES -->
+<section class="prices" id="prices">
+  <div class="prices-title">💰 Наши цены</div>
+  <div class="prices-sub">Мы держим цены ниже рынка за счёт прямой работы без посредников</div>
+  <div class="price-grid">
+    <div class="price-card" onclick="selectCategory(this, 'Грузчики')">
+      <div class="price-emoji">📦</div>
+      <div class="price-name">Грузчики</div>
+      <div class="price-amount">от 800 ₽</div>
+      <div class="price-unit">за час работы</div>
+      <div class="price-details">
+        <b>Переезды, погрузка, разгрузка</b><br>
+        +100 ₽/час — тяжёлая работа<br>
+        +100 ₽/час — подъём на этаж / сложные условия
       </div>
-      <div id="orders-list"></div>
+      <div class="price-badge">Дешевле Авито</div>
+    </div>
+    <div class="price-card" onclick="selectCategory(this, 'Разнорабочие')">
+      <div class="price-emoji">🔨</div>
+      <div class="price-name">Разнорабочие</div>
+      <div class="price-amount">договорная</div>
+      <div class="price-unit">согласовывается заранее</div>
+      <div class="price-details">
+        <b>Участок, фундамент, копка, стройка</b><br>
+        Стоимость обсуждается по телефону<br>
+        Всегда в рамках честной цены
+      </div>
+      <div class="price-badge">Без накруток</div>
+    </div>
+    <div class="price-card" onclick="selectCategory(this, 'Мастер на час')">
+      <div class="price-emoji">🔧</div>
+      <div class="price-name">Мастер на час</div>
+      <div class="price-amount">договорная</div>
+      <div class="price-unit">индивидуально</div>
+      <div class="price-details">
+        <b>Мелкий ремонт, бытовые задачи</b><br>
+        Сантехника, электрика, сборка мебели<br>
+        Стоимость обсуждается индивидуально
+      </div>
+      <div class="price-badge">Быстрый выезд</div>
+    </div>
+  </div>
+  <div class="prices-note">💡 <b>Итоговая цена</b> зависит от условий, но всегда остаётся <b>ниже рынка</b>. Без посредников — вы платите напрямую исполнителю.</div>
+</section>
+
+<!-- FORM -->
+<section class="form-section" id="order">
+  <div class="form-section-title">📝 Оставить заявку</div>
+  <div class="form-section-sub">Заполните форму — мы свяжемся в течение 15 минут</div>
+
+  <div class="form-card" id="form-card">
+    <label class="form-label">Категория услуги *</label>
+    <div class="cat-select">
+      <div class="cat-btn active" onclick="pickCat(this,'Грузчики')"><span class="cat-dot green"></span>Грузчики</div>
+      <div class="cat-btn" onclick="pickCat(this,'Разнорабочие')"><span class="cat-dot blue"></span>Разнорабочие</div>
+      <div class="cat-btn" onclick="pickCat(this,'Мастер на час')"><span class="cat-dot yellow"></span>Мастер</div>
+    </div>
+    <input type="hidden" id="f-category" value="Грузчики">
+
+    <label class="form-label">Ваше имя *</label>
+    <input type="text" class="form-input" id="f-name" placeholder="Как к вам обращаться?">
+
+    <label class="form-label">Телефон *</label>
+    <input type="tel" class="form-input" id="f-phone" placeholder="+7 (___) ___-__-__">
+
+    <label class="form-label">Город *</label>
+    <select class="form-select" id="f-city">
+      <option value="Октябрьский">Октябрьский</option>
+      <option value="Туймазы">Туймазы</option>
+    </select>
+
+    <label class="form-label">Что нужно сделать? *</label>
+    <textarea class="form-input" id="f-task" placeholder="Опишите задачу: что, где, когда, сколько людей нужно..."></textarea>
+
+    <label class="form-label">Адрес *</label>
+    <input type="text" class="form-input" id="f-address" placeholder="Улица, дом, подъезд">
+
+    <button class="form-btn" id="f-btn" onclick="submitOrder()">📝 Отправить заявку</button>
+
+    <div class="form-msg" id="f-msg"></div>
+  </div>
+</section>
+
+<!-- RECEPTION — появляется после отправки заявки -->
+<section class="reception hidden" id="reception">
+  <div class="reception-hero">
+    <div class="reception-check">✅</div>
+    <h2 class="reception-title">Заявка принята!</h2>
+    <p class="reception-sub">Мы перезвоним в течение 15 минут и подберём лучшего исполнителя.</p>
+    <button class="hero-btn" onclick="document.getElementById('reception').classList.add('hidden');document.getElementById('form-card').style.display='block';window.scrollTo({top:0,behavior:'smooth'})">📝 Создать ещё одну заявку</button>
+  </div>
+
+  <div class="reception-about">
+    <div class="reception-section-title">💎 Почему VSH Service?</div>
+    <div class="reception-text">
+      <b>VSH Service</b> — это современная платформа быстрого найма рабочих в Октябрьском и Туймазах. Мы создали экосистему, в которой заказчики получают лучший сервис по самым честным ценам, а исполнители — стабильную работу без посредников.
+    </div>
+    <div class="reception-features">
+      <div class="reception-feature">
+        <div class="rf-icon">💪</div>
+        <div class="rf-text"><b>Только проверенные рабочие.</b> Каждый исполнитель проходит проверку. Система рейтинга и званий — у нас работают только надёжные люди.</div>
+      </div>
+      <div class="reception-feature">
+        <div class="rf-icon">🤖</div>
+        <div class="rf-text"><b>Умный подбор исполнителей.</b> Наше приложение автоматически находит свободных рабочих — вам не нужно никого искать и обзванивать.</div>
+      </div>
+      <div class="reception-feature">
+        <div class="rf-icon">💰</div>
+        <div class="rf-text"><b>Прозрачная цена без накруток.</b> Вы сразу видите стоимость. Никаких посредников, скрытых комиссий и неожиданных доплат.</div>
+      </div>
+      <div class="reception-feature">
+        <div class="rf-icon">⚡</div>
+        <div class="rf-text"><b>Самые низкие цены на рынке.</b> Забудьте про Авито с завышенными ценниками. У нас прямая связь «заказчик — исполнитель» без лишних звеньев.</div>
+      </div>
+      <div class="reception-feature">
+        <div class="rf-icon">🚀</div>
+        <div class="rf-text"><b>Передовые технологии.</b> Мы используем только современные решения — быстро, удобно, автоматизированно. Это совершенно новый уровень сервиса.</div>
+      </div>
     </div>
   </div>
 
-  <!-- PROFILE -->
-  <div id="profile-page" class="page hidden">
-    <div class="app-header"><div class="header-logo">VSH<span>.</span></div><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px">МОЙ ПРОФИЛЬ</div></div>
-    <div style="padding:0 16px">
-      <div class="profile-hero">
-        <div class="profile-avatar" id="profile-avatar">?</div>
-        <div class="profile-name" id="profile-name">—</div>
-        <div class="rank-pill" id="profile-rank-pill">🔩 Новобранец</div>
-        <div class="progress-wrap">
-          <div class="progress-labels"><span id="prog-cur">Новобранец</span><span id="prog-next">Подмастерье →</span></div>
-          <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
-          <div class="progress-hint" id="prog-hint"></div>
+  <div class="reception-portfolio">
+    <div class="reception-section-title">🏗️ Наши услуги</div>
+    <div class="portfolio-grid">
+      <div class="portfolio-card" style="animation-delay:0s">
+        <div class="portfolio-bg" style="background-image:url('img/portfolio-1.jpg');background-size:cover;background-position:center"></div>
+        <div class="portfolio-content">
+          <div class="portfolio-emoji">📦</div>
+          <div class="portfolio-name">Грузчики</div>
+          <div class="portfolio-desc">Переезды, погрузка, разгрузка. Быстро и аккуратно — ваши вещи в надёжных руках.</div>
         </div>
-        <div class="stats-grid">
-          <div class="stat-box"><div class="stat-val" id="s-orders">0</div><div class="stat-lbl">Заявок</div></div>
-          <div class="stat-box"><div class="stat-val" id="s-stars">0⭐</div><div class="stat-lbl">Звёзд</div></div>
-          <div class="stat-box"><div class="stat-val" id="s-place">#—</div><div class="stat-lbl">Место</div></div>
+      </div>
+      <div class="portfolio-card" style="animation-delay:0.1s">
+        <div class="portfolio-bg" style="background-image:url('img/portfolio-2.jpg');background-size:cover;background-position:center"></div>
+        <div class="portfolio-content">
+          <div class="portfolio-emoji">🔨</div>
+          <div class="portfolio-name">Ремонт и отделка</div>
+          <div class="portfolio-desc">Покраска, шпаклёвка, поклейка обоев. Профессиональный ремонт под ключ.</div>
         </div>
       </div>
-      <div class="card"><div class="section-title">🏅 Достижения</div><div class="ach-grid" id="ach-grid"></div></div>
-      <div class="card">
-        <label class="input-label">Реквизиты для выплат</label>
-        <input type="text" class="input" id="bank-details" placeholder="Номер карты или СБП номер">
-        <button class="btn btn-outline btn-sm" onclick="saveDetails()">💾 Сохранить реквизиты</button>
-      </div>
-      <button class="btn btn-danger" style="margin-top:4px" onclick="logout()">Выйти из системы</button>
-    </div>
-  </div>
-
-  <!-- LEADERBOARD -->
-  <div id="leaderboard-page" class="page hidden">
-    <div class="app-header"><div class="header-logo">VSH<span>.</span></div><div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px">РЕЙТИНГ</div></div>
-    <div style="padding:0 16px">
-      <div class="lb-header-card"><div class="lb-title">🏆 Таблица лидеров</div><div class="lb-sub">Соревнуйся · Расти · Становись лучшим</div></div>
-      <div id="lb-list"></div>
-    </div>
-  </div>
-
-  <!-- ADMIN -->
-  <div id="admin-page" class="page hidden">
-    <div class="app-header"><div class="header-logo">VSH<span>.</span></div><div class="admin-badge">👑 Администратор</div></div>
-    <div style="padding:0 16px">
-      <!-- Новая заявка -->
-      <div class="card" id="admin-form">
-        <div class="section-title">📢 Новая заявка</div>
-        <label class="input-label">Город</label>
-        <div class="city-tabs">
-          <div class="city-tab active" onclick="selectCity(this,'Октябрьский')">Октябрьский</div>
-          <div class="city-tab" onclick="selectCity(this,'Туймазы')">Туймазы</div>
+      <div class="portfolio-card" style="animation-delay:0.2s">
+        <div class="portfolio-bg" style="background-image:url('img/portfolio-3.jpg');background-size:cover;background-position:center"></div>
+        <div class="portfolio-content">
+          <div class="portfolio-emoji">🏗️</div>
+          <div class="portfolio-name">Тяжёлые работы</div>
+          <div class="portfolio-desc">Работа с техникой, погрузка труб, стройматериалов. Опытные бригады для сложных задач.</div>
         </div>
-        <label class="input-label">Задача *</label>
-        <input type="text" class="input" id="a-task" placeholder="Что нужно сделать?">
-        <label class="input-label">Адрес *</label>
-        <input type="text" class="input" id="a-address" placeholder="Улица, дом">
-        <label class="input-label">Телефон заказчика *</label>
-        <input type="text" class="input" id="a-phone" placeholder="+7 (___) ___-__-__">
-        <label class="input-label">Доп. условия</label>
-        <textarea class="input" id="a-comment" placeholder="Время, инструменты, особенности..."></textarea>
-        <label class="input-label">Кол-во рабочих</label>
-        <input type="number" class="input" id="a-workers" value="1" min="1" max="20">
-        <button class="btn btn-primary" id="btn-pub" onclick="publishOrder()">📢 Опубликовать заявку</button>
       </div>
-      <div class="card hidden" id="admin-ok" style="text-align:center;padding:32px">
-        <div style="font-size:56px;margin-bottom:12px">✅</div>
-        <div class="section-title">Заявка опубликована!</div>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Рабочие получат уведомление в Telegram</p>
-        <button class="btn btn-outline" onclick="resetAdmin()">Создать ещё</button>
-      </div>
-
-      <!-- Управление заявками -->
-      <div class="card">
-        <div class="section-title">📋 Управление заявками</div>
-        <div id="admin-orders-list"><div style="text-align:center;padding:16px;font-size:13px;color:var(--muted)">Загрузка...</div></div>
-      </div>
-
-      <!-- Выдать звёзды -->
-      <div class="card">
-        <div class="section-title">⭐ Выдать звёзды рабочему</div>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Оцените работу исполнителя</p>
-        <div id="admin-wlist"></div>
+      <div class="portfolio-card" style="animation-delay:0.3s">
+        <div class="portfolio-bg" style="background-image:url('img/portfolio-4.jpg');background-size:cover;background-position:center"></div>
+        <div class="portfolio-content">
+          <div class="portfolio-emoji">👷</div>
+          <div class="portfolio-name">Строительство</div>
+          <div class="portfolio-desc">Бетонные работы, кладка, фундаменты. Полноценные бригады строителей.</div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- NAV -->
-  <nav class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('feed')" id="nav-feed">
-      <div class="nav-icon-wrap">
-        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        <div class="nav-badge hidden" id="orders-badge">0</div>
+  <div class="reception-cta">
+    <div class="reception-section-title">📞 Остались вопросы?</div>
+    <p style="color:var(--muted);margin-bottom:20px;font-size:15px">Свяжитесь с нами — мы всегда на связи</p>
+    <a href="#order" class="hero-btn" onclick="document.getElementById('reception').classList.add('hidden');document.getElementById('form-card').style.display='block'">📝 Оставить ещё одну заявку</a>
+  </div>
+
+  <!-- ПРОФИЛЬ ЗАКАЗЧИКА -->
+  <div class="client-profile" id="client-profile">
+    <div class="cp-card">
+      <div class="cp-level" id="cp-level-icon">🆕</div>
+      <div class="cp-name" id="cp-name">—</div>
+      <div class="cp-level-name" id="cp-level-name">Новичок</div>
+      <div class="cp-stats">
+        <div class="cp-stat"><div class="cp-stat-val" id="cp-orders">0</div><div class="cp-stat-lbl">Заказов</div></div>
+        <div class="cp-stat"><div class="cp-stat-val" id="cp-stars">0⭐</div><div class="cp-stat-lbl">Баллов</div></div>
+        <div class="cp-stat"><div class="cp-stat-val" id="cp-refs">0</div><div class="cp-stat-lbl">Друзей</div></div>
       </div>
-      <span class="nav-label">Заявки</span>
-    </div>
-    <div class="nav-item" onclick="switchTab('leaderboard')" id="nav-leaderboard">
-      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-      <span class="nav-label">Рейтинг</span>
-    </div>
-    <div class="nav-item" onclick="switchTab('profile')" id="nav-profile">
-      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-      <span class="nav-label">Профиль</span>
-    </div>
-    <div class="nav-item hidden" onclick="switchTab('admin')" id="nav-admin">
-      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
-      <span class="nav-label">Админ</span>
-    </div>
-  </nav>
-</div>
-
-<!-- MODAL: RULES -->
-<div id="modal-rules" class="modal-overlay hidden">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">⚠️ Правила бригады</div>
-    <div class="timer-wrap">
-      <div class="timer-circle">
-        <svg class="timer-svg" viewBox="0 0 90 90"><circle class="timer-track" cx="45" cy="45" r="38"/><circle class="timer-progress" cx="45" cy="45" r="38" id="rules-progress" stroke-dasharray="240" stroke-dashoffset="0"/></svg>
-        <div class="timer-num" id="rules-timer">30</div>
+      <div class="cp-progress">
+        <div class="cp-progress-bar"><div class="cp-progress-fill" id="cp-progress" style="width:0%"></div></div>
+        <div class="cp-progress-text" id="cp-progress-text">Приглашайте друзей чтобы расти</div>
       </div>
-      <div class="timer-label">Прочитайте внимательно</div>
     </div>
-    <div class="rules-list">
-      <div class="rule-item"><div class="rule-num">1</div><div>Явка на заявку <b>обязательна</b>. Принял — значит едешь.</div></div>
-      <div class="rule-item"><div class="rule-num">2</div><div>Прибыть на место не позже указанного времени.</div></div>
-      <div class="rule-item"><div class="rule-num">3</div><div>Вести себя профессионально, трезво и вежливо.</div></div>
-      <div class="rule-item"><div class="rule-num">4</div><div>После выполнения — подтвердить завершение в приложении.</div></div>
-      <div class="rule-item"><div class="rule-num rule-danger">!</div><div style="color:var(--danger)"><b>Не явился без предупреждения = бан навсегда.</b> Заказчик ждёт — не подставляй команду.</div></div>
-    </div>
-    <button class="btn btn-primary" id="btn-rules-confirm" onclick="rulesConfirmed()" disabled>✅ Ознакомлен, подтверждаю</button>
-    <button class="btn btn-danger" style="margin-top:8px" onclick="closeModal('modal-rules')">Отмена</button>
-  </div>
-</div>
 
-<!-- MODAL: CALL -->
-<div id="modal-call" class="modal-overlay hidden">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">📞 Свяжитесь с заказчиком</div>
-    <div id="modal-order-preview" style="margin-bottom:14px"></div>
-    <div class="phone-reveal-box">
-      <div class="phone-reveal-label">Телефон заказчика</div>
-      <div class="phone-reveal-num" id="reveal-phone">—</div>
-    </div>
-    <div class="timer-wrap">
-      <div class="timer-circle">
-        <svg class="timer-svg" viewBox="0 0 90 90"><circle class="timer-track" cx="45" cy="45" r="38"/><circle class="timer-progress" cx="45" cy="45" r="38" id="call-progress" stroke-dasharray="240" stroke-dashoffset="0"/></svg>
-        <div class="timer-num" id="call-timer">3:00</div>
+    <!-- РЕФЕРАЛЬНАЯ СИСТЕМА -->
+    <div class="ref-card" id="ref-card">
+      <div class="ref-title">🎁 Приглашай друзей — получай баллы!</div>
+      <div class="ref-sub">+3⭐ за каждого друга · +5⭐ когда друг сделает заказ<br>5 приглашений = бонус +10⭐</div>
+      <div class="ref-link-box">
+        <input type="text" class="ref-link-input" id="ref-link" readonly value="Загрузка...">
+        <button class="ref-copy-btn" onclick="copyRefLink()">📋 Копировать</button>
       </div>
-      <div class="timer-label">Время на договорённость</div>
+      <canvas id="ref-qr" class="ref-qr" width="160" height="160"></canvas>
+      <br>
+      <button class="ref-share-btn" onclick="shareRefLink()">📤 Поделиться с друзьями</button>
     </div>
-    <a id="btn-call-link" href="#" class="btn btn-success" style="text-decoration:none;margin-bottom:10px">📞 Позвонить заказчику</a>
-    <button class="btn btn-primary" onclick="callConfirmed()">✅ Договорился, еду на заказ!</button>
-    <button class="btn btn-danger" style="margin-top:8px" onclick="callDeclined()">Отказаться от заявки</button>
   </div>
-</div>
 
-<!-- MODAL: STARS -->
-<div id="modal-stars" class="modal-overlay hidden">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">⭐ Оценить рабочего</div>
-    <div id="rate-worker-info" style="margin-bottom:14px"></div>
-    <div class="star-row">
-      <div class="star-btn" onclick="selectStars(1)">⭐</div><div class="star-btn" onclick="selectStars(2)">⭐</div>
-      <div class="star-btn" onclick="selectStars(3)">⭐</div><div class="star-btn" onclick="selectStars(4)">⭐</div>
-      <div class="star-btn" onclick="selectStars(5)">⭐</div>
+  <!-- УРОВНИ ЛОЯЛЬНОСТИ -->
+  <div class="loyalty-section">
+    <div class="reception-section-title">🏆 Уровни лояльности</div>
+    <div class="loyalty-grid" id="loyalty-grid">
+      <div class="loyalty-item current"><div class="loyalty-icon">🆕</div><div class="loyalty-info"><div class="loyalty-name">Новичок</div><div class="loyalty-desc">Добро пожаловать в VSH Service</div></div><div class="loyalty-stars">0⭐</div></div>
+      <div class="loyalty-item locked"><div class="loyalty-icon">👍</div><div class="loyalty-info"><div class="loyalty-name">Знакомый клиент</div><div class="loyalty-desc">5 баллов — постоянные скидки ближе</div></div><div class="loyalty-stars">5⭐</div></div>
+      <div class="loyalty-item locked"><div class="loyalty-icon">⭐</div><div class="loyalty-info"><div class="loyalty-name">Активный клиент</div><div class="loyalty-desc">15 баллов — приоритетная обработка</div></div><div class="loyalty-stars">15⭐</div></div>
+      <div class="loyalty-item locked"><div class="loyalty-icon">🌟</div><div class="loyalty-info"><div class="loyalty-name">Постоянный клиент</div><div class="loyalty-desc">30 баллов — спецпредложения</div></div><div class="loyalty-stars">30⭐</div></div>
+      <div class="loyalty-item locked"><div class="loyalty-icon">🔥</div><div class="loyalty-info"><div class="loyalty-name">Лояльный клиент</div><div class="loyalty-desc">50 баллов — VIP-обслуживание скоро</div></div><div class="loyalty-stars">50⭐</div></div>
+      <div class="loyalty-item locked"><div class="loyalty-icon">💎</div><div class="loyalty-info"><div class="loyalty-name">VIP-клиент</div><div class="loyalty-desc">100 баллов — максимальные привилегии</div></div><div class="loyalty-stars">100⭐</div></div>
     </div>
-    <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px" id="stars-hint">Выберите оценку</div>
-    <button class="btn btn-primary" onclick="giveStars()">Выдать звёзды</button>
-    <button class="btn btn-danger" style="margin-top:8px" onclick="closeModal('modal-stars')">Отмена</button>
   </div>
-</div>
 
-<!-- MODAL: CONFIRM DELETE -->
-<div id="modal-delete" class="modal-overlay hidden">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">🗑️ Удалить заявку?</div>
-    <p style="font-size:14px;color:var(--muted);margin-bottom:20px" id="delete-info">Заявка будет удалена навсегда.</p>
-    <button class="btn btn-danger" id="btn-confirm-delete" onclick="confirmDeleteOrder()">🗑️ Удалить</button>
-    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-delete')">Отмена</button>
-  </div>
-</div>
-
-<!-- MODAL: EDIT ORDER -->
-<div id="modal-edit" class="modal-overlay hidden">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title">✏️ Редактировать заявку</div>
-    <input type="hidden" id="edit-id">
-    <label class="input-label">Город</label>
-    <div class="city-tabs" id="edit-city-tabs">
-      <div class="city-tab active" onclick="selectEditCity(this,'Октябрьский')">Октябрьский</div>
-      <div class="city-tab" onclick="selectEditCity(this,'Туймазы')">Туймазы</div>
+  <!-- ФОРМА ОТЗЫВА (скрыта, появляется по ссылке) -->
+  <div class="review-section hidden" id="review-section">
+    <div class="reception-section-title">✍️ Оставить отзыв</div>
+    <div class="form-card">
+      <label class="form-label">Оценка работы</label>
+      <div class="review-stars" id="review-stars">
+        <span class="review-star" onclick="setReviewStars(1)">⭐</span>
+        <span class="review-star" onclick="setReviewStars(2)">⭐</span>
+        <span class="review-star" onclick="setReviewStars(3)">⭐</span>
+        <span class="review-star" onclick="setReviewStars(4)">⭐</span>
+        <span class="review-star" onclick="setReviewStars(5)">⭐</span>
+      </div>
+      <label class="form-label">Ваш отзыв</label>
+      <textarea class="form-input" id="review-text" placeholder="Расскажите как прошла работа..."></textarea>
+      <button class="form-btn" onclick="submitReview()">📝 Отправить отзыв</button>
+      <div class="form-msg" id="review-msg"></div>
     </div>
-    <label class="input-label">Задача</label>
-    <input type="text" class="input" id="edit-task" placeholder="Описание задачи">
-    <label class="input-label">Адрес</label>
-    <input type="text" class="input" id="edit-address" placeholder="Улица, дом">
-    <label class="input-label">Телефон заказчика</label>
-    <input type="text" class="input" id="edit-phone" placeholder="+7...">
-    <label class="input-label">Имя заказчика</label>
-    <input type="text" class="input" id="edit-name" placeholder="Имя">
-    <label class="input-label">Кол-во рабочих</label>
-    <input type="number" class="input" id="edit-workers" value="1" min="1" max="20">
-    <label class="input-label">Комментарий</label>
-    <textarea class="input" id="edit-comment" placeholder="Дополнительно..."></textarea>
-    <button class="btn btn-primary" onclick="saveEditOrder()">💾 Сохранить изменения</button>
-    <button class="btn btn-success" style="margin-top:8px" id="btn-edit-publish" onclick="approveAndPublish()">✅ Одобрить и опубликовать</button>
-    <button class="btn btn-outline" style="margin-top:8px" onclick="closeModal('modal-edit')">Отмена</button>
   </div>
-</div>
+</section>
 
-<div class="toast" id="toast"></div>
+<!-- PORTFOLIO (всегда видно) -->
+<section class="advantages" id="portfolio">
+  <div class="advantages-title">🏗️ Наши работы</div>
+  <div class="adv-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+    <div class="adv-card" style="padding:0;overflow:hidden;border-radius:18px">
+      <div style="height:180px;background:url('img/portfolio-1.jpg') center/cover"></div>
+      <div style="padding:16px"><div class="adv-name">📦 Грузчики VSH</div><div class="adv-desc">Погрузка, разгрузка, переезды — быстро и аккуратно</div></div>
+    </div>
+    <div class="adv-card" style="padding:0;overflow:hidden;border-radius:18px">
+      <div style="height:180px;background:url('img/portfolio-2.jpg') center/cover"></div>
+      <div style="padding:16px"><div class="adv-name">🔨 Ремонт и отделка</div><div class="adv-desc">Покраска, шпаклёвка, поклейка — профессиональный подход</div></div>
+    </div>
+    <div class="adv-card" style="padding:0;overflow:hidden;border-radius:18px">
+      <div style="height:180px;background:url('img/portfolio-3.jpg') center/cover"></div>
+      <div style="padding:16px"><div class="adv-name">🏗️ Тяжёлые работы</div><div class="adv-desc">Техника, трубы, стройматериалы — опытные бригады</div></div>
+    </div>
+    <div class="adv-card" style="padding:0;overflow:hidden;border-radius:18px">
+      <div style="height:180px;background:url('img/portfolio-4.jpg') center/cover"></div>
+      <div style="padding:16px"><div class="adv-name">👷 Строительство</div><div class="adv-desc">Бетонные работы, кладка, фундаменты</div></div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:20px">
+    <a href="https://www.avito.ru/user/f90f447fcf02e67ef5b825f68206711d/profile?src=sharing" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:#f0f9ff;border:1px solid #bfdbfe;border-radius:100px;color:#2563eb;text-decoration:none;font-weight:600;font-size:14px;transition:all .2s">
+      ⭐ Наши отзывы на Авито
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-logo">VSH<span>.</span></div>
+  <p>Октябрьский · Туймазы · Работа есть</p>
+  <p style="margin-top:8px">© 2026 VSH Service. Все права защищены.</p>
+</footer>
 
 <script>
-const tg = window.Telegram?.WebApp || null;
-if (tg) { tg.ready(); tg.expand(); }
-
 const API = 'https://mini-appsvsh.vercel.app';
-const PIN = '2026';
-const ADMIN_ID = 7693616720;
 
-const RANKS = [
-  {name:'🔩 Новобранец',icon:'🔩',min:0},{name:'🪛 Подмастерье',icon:'🪛',min:3},
-  {name:'🔧 Рабочий',icon:'🔧',min:7},{name:'⚙️ Механик',icon:'⚙️',min:12},
-  {name:'🪚 Мастер',icon:'🪚',min:18},{name:'🏗️ Прораб',icon:'🏗️',min:25},
-  {name:'👷 Бригадир',icon:'👷',min:35},{name:'🔱 Старший бригадир',icon:'🔱',min:50},
-  {name:'🏆 Ветеран',icon:'🏆',min:70},{name:'💎 Элита',icon:'💎',min:100},
-  {name:'🚀 Профессионал',icon:'🚀',min:150},{name:'🦅 Легенда',icon:'🦅',min:200},
-  {name:'👑 Мастер-легенда',icon:'👑',min:300},{name:'⚡ Непобедимый',icon:'⚡',min:500},
-  {name:'🌟 Основатель',icon:'🌟',min:1000},
-];
+async function submitOrder() {
+  const name    = document.getElementById('f-name').value.trim();
+  const phone   = document.getElementById('f-phone').value.trim();
+  const city    = document.getElementById('f-city').value;
+  const task    = document.getElementById('f-task').value.trim();
+  const address = document.getElementById('f-address').value.trim();
+  const category = document.getElementById('f-category')?.value || 'Грузчики';
+  const msgEl   = document.getElementById('f-msg');
+  const btn     = document.getElementById('f-btn');
 
-const ACHIEVEMENTS = [
-  {icon:'🥇',name:'Первый заказ',desc:'Принял свою первую заявку',check:w=>(w.total_orders||0)>=1},
-  {icon:'🔥',name:'Ветеран заявок',desc:'Выполнил 10 заявок',check:w=>(w.total_orders||0)>=10},
-  {icon:'💪',name:'Полсотни',desc:'50 выполненных заявок',check:w=>(w.total_orders||0)>=50},
-  {icon:'⭐',name:'Первые звёзды',desc:'Получил первые 5 звёзд',check:w=>(w.stars||0)>=5},
-  {icon:'🏆',name:'Топ-3 рейтинга',desc:'Вошёл в тройку лучших',check:w=>(w._place||99)<=3},
-  {icon:'⚙️',name:'Звание: Механик',desc:'Достиг уровня Механик — 12 звёзд',check:w=>(w.stars||0)>=12},
-  {icon:'🏗️',name:'Звание: Прораб',desc:'Элита бригады — 25 звёзд',check:w=>(w.stars||0)>=25},
-  {icon:'🌟',name:'Основатель VSH',desc:'Один из первых участников системы',check:w=>w._isEarly},
-];
+  msgEl.className = 'form-msg';
+  msgEl.style.display = 'none';
 
-let currentWorker = null, selectedOrder = null, selectedWorkerForRate = null;
-let selectedStars = 0, selectedCity = 'Октябрьский', pinCode = '';
-let rulesTimerID = null, callTimerID = null, deleteOrderId = null;
-
-// UTILS
-function getRank(s){let r=RANKS[0];for(const x of RANKS)if(s>=x.min)r=x;return r}
-function getRankIndex(s){let i=0;RANKS.forEach((r,idx)=>{if(s>=r.min)i=idx});return i}
-function getProgress(s){const i=getRankIndex(s),c=RANKS[i],n=RANKS[i+1];if(!n)return{pct:100,needed:0,nextName:'Максимум'};const range=n.min-c.min,done=s-c.min;return{pct:Math.round(done/range*100),needed:n.min-s,nextName:n.name}}
-function getInitials(n){if(!n)return'?';return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
-function timeAgo(d){const m=Math.floor((Date.now()-new Date(d).getTime())/60000);if(m<1)return'только что';if(m<60)return m+' мин назад';const h=Math.floor(m/60);if(h<24)return h+' ч назад';return Math.floor(h/24)+' д назад'}
-function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3000)}
-function closeModal(id){document.getElementById(id).classList.add('hidden');if(rulesTimerID){clearInterval(rulesTimerID);rulesTimerID=null}if(callTimerID){clearInterval(callTimerID);callTimerID=null}}
-
-async function apiCall(method, endpoint, body) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  if (body) opts.body = JSON.stringify(body);
-  try { const r = await fetch(API + endpoint, opts); return await r.json(); }
-  catch (e) { return { error: e.message }; }
-}
-
-// PIN
-function pinInput(d){if(pinCode.length>=4)return;pinCode+=d;updateDots();if(pinCode.length===4)checkPin()}
-function pinDelete(){pinCode=pinCode.slice(0,-1);updateDots();document.getElementById('auth-error').classList.remove('show')}
-function updateDots(){for(let i=0;i<4;i++)document.getElementById('dot-'+i).classList.toggle('filled',i<pinCode.length)}
-
-async function checkPin(){
-  if(pinCode!==PIN){document.getElementById('auth-error').classList.add('show');setTimeout(()=>{pinCode='';updateDots();document.getElementById('auth-error').classList.remove('show')},1200);return}
-  const userId=tg?.initDataUnsafe?.user?.id||Date.now();
-  const userName=tg?.initDataUnsafe?.user?.first_name||'Рабочий';
-  const userUsername=tg?.initDataUnsafe?.user?.username||'';
-  try{
-    const res=await apiCall('POST','/api/worker-auth',{password:PIN,telegram_id:userId,first_name:userName,telegram_username:userUsername});
-    currentWorker=res.ok?res.worker:{id:userId,name:userName,telegram_username:userUsername,stars:0,total_orders:0,bank_details:''};
-  }catch{currentWorker={id:userId,name:userName,telegram_username:userUsername,stars:0,total_orders:0,bank_details:''}}
-  enterApp();
-}
-
-function enterApp(){
-  document.getElementById('auth-page').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  const uid=tg?.initDataUnsafe?.user?.id||currentWorker?.id;
-  if(String(uid)===String(ADMIN_ID))document.getElementById('nav-admin').classList.remove('hidden');
-  updateHeaderUI();loadOrders();
-}
-
-function logout(){
-  currentWorker=null;pinCode='';updateDots();
-  // Закрываем Telegram WebApp если доступен
-  if(tg&&tg.close){tg.close()}else{document.getElementById('app').classList.add('hidden');document.getElementById('auth-page').classList.remove('hidden')}
-}
-
-function updateHeaderUI(){if(!currentWorker)return;const rank=getRank(currentWorker.stars||0);document.getElementById('header-avatar').textContent=getInitials(currentWorker.name);document.getElementById('header-rank').textContent=rank.name}
-
-// TABS
-function switchTab(tab){
-  ['feed','profile','leaderboard','admin'].forEach(t=>{document.getElementById(t+'-page').classList.add('hidden');document.getElementById('nav-'+t)?.classList.remove('active')});
-  document.getElementById(tab+'-page').classList.remove('hidden');document.getElementById('nav-'+tab)?.classList.add('active');
-  if(tab==='profile')loadProfile();if(tab==='leaderboard')loadLeaderboard();if(tab==='admin'){loadAdminWorkers();loadAdminOrders()}
-}
-
-// ORDERS (feed)
-async function loadOrders(){
-  const list=document.getElementById('orders-list');
-  list.innerHTML='<div style="text-align:center;padding:48px 0"><div class="splash-loader" style="margin:0 auto 12px"></div><div style="font-size:13px;color:var(--muted)">Загружаем заявки...</div></div>';
-  const data=await apiCall('GET','/api/order?status=published');
-  if(!data||data.error||!data.length){
-    list.innerHTML='<div class="empty-state"><div class="empty-icon">☕</div><div class="empty-title">Заявок пока нет</div><div class="empty-sub">Уведомим в Telegram когда появится работа</div></div>';
-    document.getElementById('orders-badge').classList.add('hidden');return;
-  }
-  const badge=document.getElementById('orders-badge');badge.textContent=data.length;badge.classList.remove('hidden');
-  list.innerHTML='';
-  data.forEach((order,i)=>{
-    const urgent=(i===0);const div=document.createElement('div');
-    div.className='order-card'+(urgent?' urgent':'');div.style.animationDelay=(i*0.07)+'s';
-    div.innerHTML=
-      '<div class="order-top"><div><div class="order-city'+(urgent?' urgent-tag':'')+'">'+(urgent?'🔥 СРОЧНАЯ':(order.city||'Октябрьский'))+'</div>'
-      +'<div class="order-title">'+(order.service||order.task||'Задача')+'</div></div>'
-      +'<div class="order-time">'+timeAgo(order.created_at)+'</div></div>'
-      +'<div class="order-meta"><div class="meta-tag">📍 '+(order.address||'—')+'</div>'
-      +'<div class="meta-tag">👷 '+(order.workers_needed||1)+' чел.</div>'
-      +(order.comment?'<div class="meta-tag">💬 '+order.comment.slice(0,30)+(order.comment.length>30?'...':'')+'</div>':'')+'</div>'
-      +'<div class="order-phone-lock">🔒 Контакт заказчика откроется после принятия</div>'
-      +'<button class="btn btn-primary" data-oid="'+order.id+'">✅ Принять заявку</button>';
-    div.querySelector('button').addEventListener('click',()=>openOrderModal(order));
-    list.appendChild(div);
-  });
-}
-
-// ACCEPT FLOW
-function openOrderModal(order){selectedOrder=order;document.getElementById('modal-rules').classList.remove('hidden');startRulesTimer()}
-
-function startRulesTimer(){
-  const btn=document.getElementById('btn-rules-confirm'),numEl=document.getElementById('rules-timer'),circle=document.getElementById('rules-progress');
-  btn.disabled=true;let sec=30;circle.style.strokeDashoffset='0';circle.classList.remove('urgent','critical');
-  numEl.textContent='30';
-  rulesTimerID=setInterval(()=>{sec--;numEl.textContent=sec;circle.style.strokeDashoffset=240-(240*(30-sec)/30);
-    if(sec<=10)circle.classList.add('urgent');
-    if(sec<=0){clearInterval(rulesTimerID);rulesTimerID=null;btn.disabled=false;numEl.textContent='✓'}
-  },1000);
-}
-
-function rulesConfirmed(){if(rulesTimerID){clearInterval(rulesTimerID);rulesTimerID=null}document.getElementById('modal-rules').classList.add('hidden');openCallModal()}
-
-async function openCallModal(){
-  // Атомарное принятие — если 409, значит уже занята
-  const res=await apiCall('POST','/api/order',{action:'accept_order',order_id:selectedOrder.id,worker_id:currentWorker.id});
-
-  if(res.error==='already_taken'){
-    showToast('⚠️ Заявка уже принята другим рабочим','warn');loadOrders();return;
+  if (!name || !phone || !task || !address) {
+    msgEl.className = 'form-msg error';
+    msgEl.textContent = '❌ Заполните все обязательные поля';
+    msgEl.style.display = 'block';
+    return;
   }
 
-  const phone=res.phone||selectedOrder.phone||'—';
-  document.getElementById('reveal-phone').textContent=phone;
-  document.getElementById('btn-call-link').href='tel:'+phone;
-  document.getElementById('modal-order-preview').innerHTML=
-    '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px">'
-    +'<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:6px">🔧 '+(selectedOrder.service||selectedOrder.task||'Задача')+'</div>'
-    +'<div style="font-size:13px;color:var(--muted)">📍 '+(selectedOrder.address||'—')+'</div></div>';
-  document.getElementById('modal-call').classList.remove('hidden');startCallTimer();
-}
-
-function startCallTimer(){
-  const numEl=document.getElementById('call-timer'),circle=document.getElementById('call-progress');
-  let totalSec=180;circle.style.strokeDashoffset='0';circle.classList.remove('urgent','critical');
-  callTimerID=setInterval(()=>{totalSec--;const m=Math.floor(totalSec/60),s=totalSec%60;
-    numEl.textContent=m+':'+(s<10?'0':'')+s;circle.style.strokeDashoffset=240-(240*(180-totalSec)/180);
-    if(totalSec<=60)circle.classList.add('urgent');if(totalSec<=20){circle.classList.remove('urgent');circle.classList.add('critical')}
-    if(totalSec<=0){clearInterval(callTimerID);callTimerID=null;numEl.textContent='⏰';showToast('⏰ Время вышло!','warn')}
-  },1000);
-}
-
-function callConfirmed(){if(callTimerID){clearInterval(callTimerID);callTimerID=null}document.getElementById('modal-call').classList.add('hidden');showToast('🚀 Отлично! Удачи на заявке!','success');loadOrders()}
-
-function callDeclined(){if(callTimerID){clearInterval(callTimerID);callTimerID=null}document.getElementById('modal-call').classList.add('hidden');showToast('Заявка отменена','error');loadOrders()}
-
-// PROFILE
-function loadProfile(){
-  if(!currentWorker)return;
-  const stars=currentWorker.stars||0,orders=currentWorker.total_orders||0,rank=getRank(stars),prog=getProgress(stars);
-  document.getElementById('profile-avatar').textContent=getInitials(currentWorker.name);
-  document.getElementById('profile-name').textContent=currentWorker.name||'Рабочий';
-  document.getElementById('profile-rank-pill').textContent=rank.name;
-  document.getElementById('s-orders').textContent=orders;
-  document.getElementById('s-stars').textContent=stars+'⭐';
-  document.getElementById('prog-fill').style.width=prog.pct+'%';
-  document.getElementById('prog-cur').textContent=rank.name;
-  document.getElementById('prog-next').textContent=prog.nextName!=='Максимум'?prog.nextName+' →':'👑 Максимум';
-  document.getElementById('prog-hint').textContent=prog.needed>0?'Ещё '+prog.needed+' ⭐ до следующего звания':'🏆 Высшее звание!';
-  document.getElementById('bank-details').value=currentWorker.bank_details||'';
-  const grid=document.getElementById('ach-grid');
-  grid.innerHTML=ACHIEVEMENTS.map(a=>{const earned=a.check(currentWorker);return'<div class="ach-item '+(earned?'earned':'')+'"><div class="ach-icon">'+a.icon+'</div><div class="ach-name">'+a.name+'</div><div class="ach-desc">'+(earned?a.desc:'🔒 Заблокировано')+'</div></div>'}).join('');
-  loadLeaderboardForRank();
-}
-
-async function loadLeaderboardForRank(){
-  const data=await apiCall('GET','/api/worker-auth?list=1');
-  if(!data||!Array.isArray(data))return;
-  data.forEach((w,i)=>{if(currentWorker&&String(w.id)===String(currentWorker.id)){currentWorker._place=i+1;document.getElementById('s-place').textContent='#'+(i+1)}});
-}
-
-async function saveDetails(){
-  if(!currentWorker)return;const v=document.getElementById('bank-details').value.trim();
-  const res=await apiCall('POST','/api/worker-actions',{action:'save_details',worker_id:currentWorker.id,bank_details:v});
-  if(res.success){currentWorker.bank_details=v;showToast('✅ Реквизиты сохранены','success')}else showToast('Ошибка сохранения','error');
-}
-
-// LEADERBOARD — с @username
-async function loadLeaderboard(){
-  const list=document.getElementById('lb-list');
-  list.innerHTML='<div style="text-align:center;padding:40px 0"><div class="splash-loader" style="margin:0 auto"></div></div>';
-  const data=await apiCall('GET','/api/worker-auth?list=1');
-  if(!data||data.error||!Array.isArray(data)||!data.length){
-    list.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">Рейтинг пуст</div></div>';return;
+  // Простая валидация телефона
+  const phoneClean = phone.replace(/\D/g, '');
+  if (phoneClean.length < 10) {
+    msgEl.className = 'form-msg error';
+    msgEl.textContent = '❌ Введите корректный номер телефона';
+    msgEl.style.display = 'block';
+    return;
   }
-  data.forEach((w,i)=>{if(currentWorker&&String(w.id)===String(currentWorker.id))currentWorker._place=i+1});
-  const medals=['pos-gold','pos-silver','pos-bronze'],trophies=['🥇','🥈','🥉'];
-  list.innerHTML=data.slice(0,20).map((w,i)=>{
-    const isMe=currentWorker&&String(w.id)===String(currentWorker.id);const rank=getRank(w.stars||0);
-    const uname=w.telegram_username?'@'+w.telegram_username:'';
-    return'<div class="lb-item '+(isMe?'me':'')+' '+(i===0?'top1':'')+'" style="animation-delay:'+(i*0.05)+'s">'
-      +'<div class="lb-pos '+(medals[i]||'')+'">'+(trophies[i]||(i+1))+'</div>'
-      +'<div class="lb-avatar">'+getInitials(w.name)+'</div>'
-      +'<div class="lb-info"><div class="lb-name">'+(w.name||'Рабочий')+(isMe?' <span style="color:var(--accent);font-size:10px">(Вы)</span>':'')+'</div>'
-      +(uname?'<div class="lb-username">'+uname+'</div>':'')
-      +'<div class="lb-rank-tag">'+rank.name+' · '+(w.total_orders||0)+' заявок</div></div>'
-      +'<div class="lb-score">'+(w.stars||0)+'⭐</div></div>'
-  }).join('');
+
+  btn.disabled = true;
+  btn.textContent = 'Отправка...';
+
+  try {
+    const res = await fetch(API + '/api/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'client',
+        name, phone, city, task, address,
+        service: category + ': ' + task
+      })
+    });
+    const data = await res.json();
+
+    if (data.success || data.orderId) {
+      // Показываем подтверждение ПРЯМО НА МЕСТЕ формы (без скролла вверх)
+      document.getElementById('form-card').innerHTML =
+        '<div style="text-align:center;padding:40px 16px">' +
+        '<div style="font-size:56px;margin-bottom:16px">✅</div>' +
+        '<div style="font-family:Bebas Neue,sans-serif;font-size:28px;letter-spacing:1px;color:#0f172a;margin-bottom:8px">Заявка отправлена!</div>' +
+        '<p style="font-size:15px;color:#64748b;margin-bottom:24px;line-height:1.6">Мы свяжемся с вами в ближайшее время.<br>Номер заявки: <b>#' + data.orderId + '</b></p>' +
+        '<button class="form-btn" onclick="location.reload()" style="max-width:280px;margin:0 auto">📝 Оставить ещё заявку</button>' +
+        '</div>';
+
+      // Показываем reception ниже (профиль, рефералка, портфолио)
+      document.getElementById('reception').classList.remove('hidden');
+
+      // Регистрируем клиента
+      registerClient(name, phone, city);
+    } else {
+      throw new Error(data.error || 'Неизвестная ошибка');
+    }
+  } catch (e) {
+    msgEl.className = 'form-msg error';
+    msgEl.textContent = '❌ Ошибка: ' + e.message + '. Попробуйте позже.';
+    msgEl.style.display = 'block';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '📝 Отправить заявку';
 }
 
-// ADMIN
-function selectCity(el,city){selectedCity=city;document.querySelectorAll('.city-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active')}
-
-async function publishOrder(){
-  const task=document.getElementById('a-task').value.trim(),address=document.getElementById('a-address').value.trim(),phone=document.getElementById('a-phone').value.trim();
-  const comment=document.getElementById('a-comment').value.trim(),workers=parseInt(document.getElementById('a-workers').value)||1;
-  if(!task||!address||!phone){showToast('Заполните задачу, адрес и телефон','error');return}
-  const btn=document.getElementById('btn-pub');btn.disabled=true;btn.textContent='Публикация...';
-  const res=await apiCall('POST','/api/order',{source:'admin',service:task,address,phone,city:selectedCity,comment,workers_needed:workers});
-  btn.disabled=false;btn.textContent='📢 Опубликовать заявку';
-  if(res.success||res.orderId){
-    document.getElementById('admin-form').classList.add('hidden');document.getElementById('admin-ok').classList.remove('hidden');
-    showToast('✅ Заявка #'+res.orderId+' опубликована','success');loadAdminOrders();
-  }else showToast(res.error||'Ошибка сервера','error');
-}
-
-function resetAdmin(){['a-task','a-address','a-phone','a-comment'].forEach(id=>document.getElementById(id).value='');document.getElementById('a-workers').value='1';document.getElementById('admin-form').classList.remove('hidden');document.getElementById('admin-ok').classList.add('hidden')}
-
-// ADMIN: управление заявками
-let allAdminOrders = [];
-let editCity = 'Октябрьский';
-
-function selectEditCity(el, city) {
-  editCity = city;
-  document.querySelectorAll('#edit-city-tabs .city-tab').forEach(t => t.classList.remove('active'));
+// Выбор категории в форме
+function pickCat(el, cat) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+  document.getElementById('f-category').value = cat;
 }
 
-async function loadAdminOrders(){
-  const list=document.getElementById('admin-orders-list');
-  const data=await apiCall('GET','/api/order');
-  if(!data||!Array.isArray(data)||!data.length){list.innerHTML='<div style="text-align:center;padding:16px;font-size:13px;color:var(--muted)">Нет заявок</div>';return}
-
-  allAdminOrders = data;
-
-  // Разделяем: ожидающие модерации (от заказчиков) и остальные
-  const waiting = data.filter(o => o.status === 'waiting_admin');
-  const active = data.filter(o => o.status !== 'waiting_admin');
-
-  let html = '';
-
-  // ── Заявки от заказчиков (ждут модерации) ──
-  if (waiting.length > 0) {
-    html += '<div class="admin-section-label waiting">📩 Заявки от заказчиков (' + waiting.length + ')</div>';
-    html += waiting.map(o => renderAdminOrder(o, true)).join('');
-  }
-
-  // ── Активные / принятые ──
-  if (active.length > 0) {
-    html += '<div class="admin-section-label">📋 Опубликованные и принятые (' + active.length + ')</div>';
-    html += active.map(o => renderAdminOrder(o, false)).join('');
-  }
-
-  list.innerHTML = html;
-}
-
-function renderAdminOrder(o, isWaiting) {
-  const statusClass = o.status==='published' ? 'status-published' : o.status==='accepted' ? 'status-accepted' : 'status-waiting';
-  const statusText = o.status==='published' ? 'Активна' : o.status==='accepted' ? 'Принята' : 'Ожидает модерации';
-
-  let detail = '';
-  if (isWaiting) {
-    // Для заявок от заказчиков показываем полную информацию
-    detail = '<div class="admin-order-detail">'
-      + (o.name ? '👤 <span>' + o.name + '</span><br>' : '')
-      + (o.phone ? '📞 <span>' + o.phone + '</span><br>' : '')
-      + (o.address ? '📍 <span>' + o.address + '</span><br>' : '')
-      + (o.city ? '🏙️ <span>' + o.city + '</span><br>' : '')
-      + (o.task ? '🔧 <span>' + o.task + '</span><br>' : '')
-      + (o.comment ? '💬 <span>' + o.comment + '</span>' : '')
-      + '</div>';
-  }
-
-  return '<div class="admin-order-item" style="flex-wrap:wrap">'
-    + '<div class="status-dot ' + statusClass + '"></div>'
-    + '<div class="admin-order-info" style="min-width:0;flex:1">'
-      + '<div class="admin-order-title">#' + o.id + ' ' + (o.service || o.task || 'Задача') + '</div>'
-      + '<div class="admin-order-sub">' + statusText + ' · ' + (o.city || '') + ' · ' + timeAgo(o.created_at) + '</div>'
-      + detail
-    + '</div>'
-    + '<div class="admin-order-actions">'
-      + (isWaiting ? '<div class="admin-order-btn approve" onclick="quickApprove(' + o.id + ')" title="Одобрить">✅</div>' : '')
-      + '<div class="admin-order-btn edit" onclick="openEditModal(' + o.id + ')" title="Редактировать">✏️</div>'
-      + '<div class="admin-order-btn del" onclick="askDeleteOrder(' + o.id + ',\'' + ((o.service||o.task||'').replace(/'/g,"\\'")) + '\')" title="Удалить">🗑️</div>'
-    + '</div>'
-    + '</div>';
-}
-
-function openEditModal(orderId) {
-  const o = allAdminOrders.find(x => x.id === orderId);
-  if (!o) { showToast('Заявка не найдена', 'error'); return; }
-
-  document.getElementById('edit-id').value = o.id;
-  document.getElementById('edit-task').value = o.service || o.task || '';
-  document.getElementById('edit-address').value = o.address || '';
-  document.getElementById('edit-phone').value = o.phone || '';
-  document.getElementById('edit-name').value = o.name || '';
-  document.getElementById('edit-workers').value = o.workers_needed || 1;
-  document.getElementById('edit-comment').value = o.comment || '';
-
-  // Город
-  editCity = o.city || 'Октябрьский';
-  document.querySelectorAll('#edit-city-tabs .city-tab').forEach(t => {
-    t.classList.toggle('active', t.textContent === editCity);
+// Выбор категории из карточек цен
+function selectCategory(el, cat) {
+  document.querySelectorAll('.price-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  // Обновляем кнопку в форме
+  document.querySelectorAll('.cat-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(cat.substring(0, 5)));
   });
-
-  // Показываем/скрываем кнопку "Одобрить и опубликовать"
-  const btnPub = document.getElementById('btn-edit-publish');
-  if (o.status === 'waiting_admin') {
-    btnPub.classList.remove('hidden');
-  } else {
-    btnPub.classList.add('hidden');
-  }
-
-  document.getElementById('modal-edit').classList.remove('hidden');
+  document.getElementById('f-category').value = cat;
+  // Скроллим к форме
+  document.getElementById('order').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-async function saveEditOrder() {
-  const id = document.getElementById('edit-id').value;
-  const res = await apiCall('PATCH', '/api/order', {
-    id: parseInt(id),
-    service: document.getElementById('edit-task').value.trim(),
-    address: document.getElementById('edit-address').value.trim(),
-    phone: document.getElementById('edit-phone').value.trim(),
-    city: editCity,
-    workers_needed: parseInt(document.getElementById('edit-workers').value) || 1,
-    comment: document.getElementById('edit-comment').value.trim()
+// Маска телефона
+document.getElementById('f-phone').addEventListener('input', function(e) {
+  let v = this.value.replace(/\D/g, '');
+  if (v.length > 0 && v[0] === '8') v = '7' + v.slice(1);
+  if (v.length > 11) v = v.slice(0, 11);
+  if (v.length === 0) { this.value = ''; return; }
+  let f = '+7';
+  if (v.length > 1) f += ' (' + v.slice(1, 4);
+  if (v.length > 4) f += ') ' + v.slice(4, 7);
+  if (v.length > 7) f += '-' + v.slice(7, 9);
+  if (v.length > 9) f += '-' + v.slice(9, 11);
+  this.value = f;
+});
+
+// ── РЕФЕРАЛЬНАЯ СИСТЕМА ──
+
+// Получаем ref из URL (если пришёл по реферальной ссылке)
+const urlParams = new URLSearchParams(window.location.search);
+const refFromUrl = urlParams.get('ref') || '';
+
+let currentClient = null;
+let reviewStars = 0;
+
+async function registerClient(name, phone, city) {
+  // Сохраняем телефон для возврата на сайт
+  const cleanPhone = phone.replace(/\D/g, '');
+  sessionStorage.setItem('vsh_client_phone', cleanPhone);
+
+  try {
+    const res = await fetch(API + '/api/client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'get_or_create',
+        phone: phone,
+        name: name,
+        city: city || 'Октябрьский',
+        ref: refFromUrl
+      })
+    });
+    const data = await res.json();
+    if (data.success && data.client) {
+      currentClient = data.client;
+      updateClientProfile(data.client);
+    }
+  } catch (e) {
+    console.error('Register client error:', e);
+  }
+}
+
+function updateClientProfile(c) {
+  document.getElementById('cp-name').textContent = c.name || 'Заказчик';
+  document.getElementById('cp-level-icon').textContent = c.level_icon || '🆕';
+  document.getElementById('cp-level-name').textContent = c.level_name || 'Новичок';
+  document.getElementById('cp-orders').textContent = c.total_orders || 0;
+  document.getElementById('cp-stars').textContent = (c.stars || 0) + '⭐';
+  document.getElementById('cp-refs').textContent = c.total_referrals || 0;
+
+  // Прогресс
+  const stars = c.stars || 0;
+  const levels = [0, 5, 15, 30, 50, 100];
+  let curIdx = 0;
+  for (let i = 0; i < levels.length; i++) {
+    if (stars >= levels[i]) curIdx = i;
+  }
+  const nextStars = levels[curIdx + 1] || levels[levels.length - 1];
+  const prevStars = levels[curIdx];
+  const pct = nextStars > prevStars ? Math.min(100, Math.round((stars - prevStars) / (nextStars - prevStars) * 100)) : 100;
+  document.getElementById('cp-progress').style.width = pct + '%';
+  document.getElementById('cp-progress-text').textContent =
+    curIdx < levels.length - 1
+      ? 'Ещё ' + (nextStars - stars) + '⭐ до следующего уровня'
+      : '💎 Максимальный уровень!';
+
+  // Реферальная ссылка
+  const baseUrl = window.location.origin + window.location.pathname;
+  const refLink = baseUrl + '?ref=' + (c.ref_code || 'VSH');
+  document.getElementById('ref-link').value = refLink;
+
+  // QR-код
+  drawQR(refLink);
+
+  // Подсветка текущего уровня
+  updateLoyaltyGrid(stars);
+}
+
+function updateLoyaltyGrid(stars) {
+  const items = document.querySelectorAll('.loyalty-item');
+  const thresholds = [0, 5, 15, 30, 50, 100];
+  items.forEach((item, i) => {
+    item.classList.remove('current', 'locked');
+    const isReached = stars >= thresholds[i];
+    const isNext = i < thresholds.length - 1 && stars < thresholds[i + 1];
+    if (isReached && (isNext || i === thresholds.length - 1)) {
+      item.classList.add('current');
+    } else if (!isReached) {
+      item.classList.add('locked');
+    }
   });
+}
 
-  if (res.success) {
-    closeModal('modal-edit');
-    showToast('✅ Заявка #' + id + ' обновлена', 'success');
-    loadAdminOrders();
+function copyRefLink() {
+  const input = document.getElementById('ref-link');
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = document.querySelector('.ref-copy-btn');
+    btn.textContent = '✅ Скопировано!';
+    setTimeout(() => btn.textContent = '📋 Копировать', 2000);
+  }).catch(() => { document.execCommand('copy'); });
+}
+
+function shareRefLink() {
+  const link = document.getElementById('ref-link').value;
+  const text = '💪 VSH Service — рабочие руки за 30 минут! Без посредников, дешевле Авито. Попробуй: ' + link;
+  if (navigator.share) {
+    navigator.share({ title: 'VSH Service', text: text, url: link }).catch(() => {});
   } else {
-    showToast(res.error || 'Ошибка сохранения', 'error');
+    copyRefLink();
   }
 }
 
-async function approveAndPublish() {
-  const id = document.getElementById('edit-id').value;
-  const res = await apiCall('PATCH', '/api/order', {
-    id: parseInt(id),
-    service: document.getElementById('edit-task').value.trim(),
-    address: document.getElementById('edit-address').value.trim(),
-    phone: document.getElementById('edit-phone').value.trim(),
-    city: editCity,
-    workers_needed: parseInt(document.getElementById('edit-workers').value) || 1,
-    comment: document.getElementById('edit-comment').value.trim(),
-    status: 'published'
-  });
+// QR-код через внешний API
+function drawQR(url) {
+  const canvas = document.getElementById('ref-qr');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = 160;
+  canvas.width = size; canvas.height = size;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => { ctx.fillStyle = 'white'; ctx.fillRect(0, 0, size, size); ctx.drawImage(img, 8, 8, size - 16, size - 16); };
+  img.onerror = () => { ctx.fillStyle = '#f0f9ff'; ctx.fillRect(0, 0, size, size); ctx.fillStyle = '#2563eb'; ctx.font = 'bold 12px Outfit'; ctx.textAlign = 'center'; ctx.fillText('Скопируйте ссылку', size / 2, size / 2); };
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(url);
+}
 
-  if (res.success) {
-    closeModal('modal-edit');
-    showToast('✅ Заявка #' + id + ' одобрена и опубликована!', 'success');
-    loadAdminOrders();
-    loadOrders();
-  } else {
-    showToast(res.error || 'Ошибка', 'error');
+// ── ОТЗЫВЫ ──
+function setReviewStars(n) {
+  reviewStars = n;
+  document.querySelectorAll('.review-star').forEach((s, i) => s.classList.toggle('active', i < n));
+}
+
+async function submitReview() {
+  if (!reviewStars) { alert('Выберите оценку'); return; }
+  const text = document.getElementById('review-text').value.trim();
+  const msgEl = document.getElementById('review-msg');
+  try {
+    const res = await fetch(API + '/api/client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'review', client_phone: currentClient?.phone || '', client_name: currentClient?.name || '', rating: reviewStars, text: text })
+    });
+    const data = await res.json();
+    if (data.success) {
+      msgEl.className = 'form-msg success'; msgEl.textContent = '✅ Спасибо за отзыв! +2⭐ начислено'; msgEl.style.display = 'block';
+      reviewStars = 0; document.getElementById('review-text').value = '';
+      document.querySelectorAll('.review-star').forEach(s => s.classList.remove('active'));
+    }
+  } catch (e) { msgEl.className = 'form-msg error'; msgEl.textContent = '❌ Ошибка: ' + e.message; msgEl.style.display = 'block'; }
+}
+
+// Показываем форму отзыва если ?review=1 в URL
+if (urlParams.get('review') === '1') {
+  window.addEventListener('load', () => { document.getElementById('review-section')?.classList.remove('hidden'); });
+}
+
+// Автозагрузка профиля если клиент уже был на сайте
+window.addEventListener('load', () => {
+  const savedPhone = sessionStorage.getItem('vsh_client_phone');
+  if (savedPhone) {
+    fetch(API + '/api/client?action=profile&phone=' + encodeURIComponent(savedPhone))
+      .then(r => r.json())
+      .then(data => { if (data.success && data.client) { currentClient = data.client; updateClientProfile(data.client); } })
+      .catch(() => {});
   }
-}
-
-async function quickApprove(orderId) {
-  const o = allAdminOrders.find(x => x.id === orderId);
-  if (!o) return;
-  const res = await apiCall('PATCH', '/api/order', {
-    id: orderId,
-    service: o.service || o.task || '',
-    status: 'published'
-  });
-  if (res.success) {
-    showToast('✅ Заявка #' + orderId + ' опубликована!', 'success');
-    loadAdminOrders();
-    loadOrders();
-  } else {
-    showToast(res.error || 'Ошибка', 'error');
-  }
-}
-
-function askDeleteOrder(id,title){deleteOrderId=id;document.getElementById('delete-info').textContent='Удалить заявку #'+id+' «'+title+'»?';document.getElementById('modal-delete').classList.remove('hidden')}
-
-async function confirmDeleteOrder(){
-  if(!deleteOrderId)return;
-  closeModal('modal-delete');
-  const res=await apiCall('DELETE','/api/order?id='+deleteOrderId);
-  if(res.success){showToast('🗑️ Заявка #'+deleteOrderId+' удалена','success');deleteOrderId=null;loadAdminOrders();loadOrders()}
-  else showToast('Ошибка удаления','error');
-}
-
-// ADMIN: workers + stars
-async function loadAdminWorkers(){
-  const list=document.getElementById('admin-wlist');
-  list.innerHTML='<div style="text-align:center;padding:16px 0"><div class="splash-loader" style="margin:0 auto"></div></div>';
-  const data=await apiCall('GET','/api/worker-auth?list=1');
-  if(!data||!Array.isArray(data)||!data.length){list.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">Рабочих пока нет</div>';return}
-  list.innerHTML=data.map(w=>{
-    const rank=getRank(w.stars||0);
-    return'<div class="worker-list-item" data-wid="'+w.id+'"><div class="wli-avatar">'+getInitials(w.name)+'</div>'
-      +'<div class="wli-info"><div class="wli-name">'+w.name+(w.telegram_username?' <span style="color:var(--muted);font-size:11px">@'+w.telegram_username+'</span>':'')+'</div>'
-      +'<div class="wli-rank">'+rank.name+' · '+(w.total_orders||0)+' заявок</div></div>'
-      +'<div class="wli-score">'+(w.stars||0)+'⭐</div></div>'
-  }).join('');
-  list.querySelectorAll('.worker-list-item').forEach(el=>{el.addEventListener('click',()=>{const wid=el.dataset.wid;const w=data.find(x=>String(x.id)===wid);if(w)openStarsModal(w)})});
-}
-
-function openStarsModal(worker){
-  selectedWorkerForRate=worker;selectedStars=0;
-  document.querySelectorAll('.star-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('stars-hint').textContent='Выберите оценку';
-  document.getElementById('rate-worker-info').innerHTML=
-    '<div style="display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px">'
-    +'<div class="wli-avatar">'+getInitials(worker.name)+'</div><div>'
-    +'<div style="font-weight:700;color:#fff">'+worker.name+'</div>'
-    +'<div style="font-size:12px;color:var(--muted)">'+getRank(worker.stars||0).name+' · '+(worker.stars||0)+'⭐</div></div></div>';
-  document.getElementById('modal-stars').classList.remove('hidden');
-}
-
-function selectStars(n){selectedStars=n;document.querySelectorAll('.star-btn').forEach((b,i)=>b.classList.toggle('active',i<n));const labels=['','Слабовато 😕','Нормально 😐','Хорошо 👍','Отлично 🔥','Легенда 👑'];document.getElementById('stars-hint').textContent=labels[n]||''}
-
-async function giveStars(){
-  if(!selectedStars){showToast('Выберите оценку','error');return}
-  const prevRankIdx=getRankIndex(selectedWorkerForRate.stars||0);
-  const res=await apiCall('POST','/api/worker-actions',{action:'give_stars',worker_id:selectedWorkerForRate.id,stars:selectedStars});
-  closeModal('modal-stars');
-  if(res.success){showToast('⭐ '+selectedWorkerForRate.name+' +'+selectedStars+' звёзд!','success');
-    const newRankIdx=getRankIndex(res.newTotal||0);if(newRankIdx>prevRankIdx)showRankUp(RANKS[newRankIdx].name,RANKS[newRankIdx].icon);loadAdminWorkers()}
-  else showToast(res.error||'Ошибка','error');
-}
-
-function showRankUp(rankName,icon){const o=document.createElement('div');o.className='rankup-overlay';o.innerHTML='<div class="rankup-card"><div class="rankup-icon">'+icon+'</div><div class="rankup-title">НОВОЕ ЗВАНИЕ!</div><div class="rankup-rank">'+rankName+'</div><button class="btn btn-primary" onclick="this.closest(\'.rankup-overlay\').remove()">Отлично! 🎉</button></div>';document.body.appendChild(o)}
-
-// INIT
-window.addEventListener('load',()=>{setTimeout(()=>{document.getElementById('splash').classList.add('hidden');document.getElementById('auth-page').classList.remove('hidden')},1800)});
+});
 </script>
 </body>
 </html>
