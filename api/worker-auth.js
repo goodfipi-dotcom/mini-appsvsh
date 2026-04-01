@@ -35,10 +35,14 @@ async function initDB() {
   }
 }
 
+const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
+
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  const origin = req.headers.origin || '';
+  const allowed = ['https://mini-appsvsh.vercel.app'];
+  res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : allowed[0]);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Secret');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
@@ -50,6 +54,18 @@ export default async function handler(req, res) {
         'SELECT id, name, telegram_username, stars, total_orders, total_earnings, created_at FROM workers ORDER BY stars DESC, total_orders DESC LIMIT 50'
       );
       return res.status(200).json(result.rows);
+    }
+
+    // DELETE — удалить рабочего (только админ)
+    if (req.method === 'DELETE') {
+      const secret = req.headers['x-admin-secret'] || '';
+      if (ADMIN_SECRET && secret !== ADMIN_SECRET) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: 'Missing worker id' });
+      await pool.query('DELETE FROM workers WHERE id = $1', [id]);
+      return res.status(200).json({ success: true, ok: true, deleted: id });
     }
 
     // POST — вход / регистрация
