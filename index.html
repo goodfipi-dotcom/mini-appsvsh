@@ -956,7 +956,56 @@ async function loadOrders(){
 }
 
 // ACCEPT FLOW
-function openOrderModal(order){selectedOrder=order;document.getElementById('modal-rules').classList.remove('hidden');startRulesTimer()}
+// ── СИСТЕМА ЛИМИТОВ ЗАЯВОК ──
+const RANK_LIMITS = [
+  { name: '🟢 Новичок',     minStars: 0,   maxPerWeek: 1, tier: 'free' },
+  { name: '🔵 Продвинутый', minStars: 35,  maxPerWeek: 2, tier: 'free' },
+  { name: '🟣 Профи',       minStars: 100, maxPerWeek: 5, tier: 'pro' },    // будущая подписка 500₽
+  { name: '🏆 Элита',       minStars: 200, maxPerWeek: 999, tier: 'elite' }, // будущая подписка 1000₽
+];
+
+function getWorkerTier(stars) {
+  let tier = RANK_LIMITS[0];
+  for (const t of RANK_LIMITS) {
+    if (stars >= t.minStars) tier = t;
+  }
+  return tier;
+}
+
+// Счётчик принятых заявок за неделю (localStorage)
+function getWeeklyAccepted() {
+  try {
+    const data = JSON.parse(localStorage.getItem('vsh_weekly_accepted') || '{}');
+    const now = Date.now();
+    const weekMs = 7 * 24 * 3600 * 1000;
+    // Очищаем старые записи
+    const valid = (data.timestamps || []).filter(t => now - t < weekMs);
+    return valid;
+  } catch(e) { return []; }
+}
+
+function addWeeklyAccepted() {
+  const valid = getWeeklyAccepted();
+  valid.push(Date.now());
+  localStorage.setItem('vsh_weekly_accepted', JSON.stringify({ timestamps: valid }));
+}
+
+function openOrderModal(order) {
+  selectedOrder = order;
+
+  // Проверяем лимит заявок для текущего ранга
+  const stars = currentWorker?.stars || 0;
+  const tier = getWorkerTier(stars);
+  const weeklyCount = getWeeklyAccepted().length;
+
+  if (weeklyCount >= tier.maxPerWeek) {
+    showToast('⚠️ Лимит заявок: ' + tier.maxPerWeek + ' в неделю для ранга ' + tier.name + '. Повышайте звание!', 'warn');
+    return;
+  }
+
+  document.getElementById('modal-rules').classList.remove('hidden');
+  startRulesTimer();
+}
 
 function startRulesTimer(){
   const btn=document.getElementById('btn-rules-confirm'),numEl=document.getElementById('rules-timer'),circle=document.getElementById('rules-progress');
@@ -977,6 +1026,9 @@ async function openCallModal(){
   if(res.error==='already_taken'){
     showToast('⚠️ Заявка уже принята другим рабочим','warn');loadOrders();return;
   }
+
+  // Засчитываем заявку в недельный лимит
+  addWeeklyAccepted();
 
   const phone=res.phone||selectedOrder.phone||'—';
   document.getElementById('reveal-phone').textContent=phone;
@@ -1015,6 +1067,14 @@ function loadProfile(){
   document.getElementById('prog-cur').textContent=rank.name;
   document.getElementById('prog-next').textContent=prog.nextName!=='Максимум'?prog.nextName+' →':'👑 Максимум';
   document.getElementById('prog-hint').textContent=prog.needed>0?'Ещё '+prog.needed+' ⭐ до следующего звания':'🏆 Высшее звание!';
+
+  // Лимит заявок
+  const tier = getWorkerTier(stars);
+  const weeklyUsed = getWeeklyAccepted().length;
+  const limitText = tier.maxPerWeek >= 999 ? '∞' : tier.maxPerWeek;
+  document.getElementById('prog-hint').textContent +=
+    ' · Заявок на неделе: ' + weeklyUsed + '/' + limitText;
+
   document.getElementById('bank-details').value=currentWorker.bank_details||'';
   // Реферальный код
   document.getElementById('worker-ref-code').textContent = generateWorkerRefCode();
@@ -1288,12 +1348,44 @@ async function loadAdminWorkers(){
   if(!data||!Array.isArray(data)||!data.length){list.innerHTML='<div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">Рабочих пока нет</div>';return}
   list.innerHTML=data.map(w=>{
     const rank=getRank(w.stars||0);
-    return'<div class="worker-list-item" data-wid="'+w.id+'"><div class="wli-avatar">'+getInitials(w.name)+'</div>'
-      +'<div class="wli-info"><div class="wli-name">'+w.name+(w.telegram_username?' <span style="color:var(--muted);font-size:11px">@'+w.telegram_username+'</span>':'')+'</div>'
+    return'<div class="worker-list-item" data-wid="'+w.id+'" style="flex-wrap:wrap">'
+      +'<div class="wli-avatar">'+getInitials(w.name)+'</div>'
+      +'<div class="wli-info"><div class="wli-name">'+escapeHtml(w.name)+(w.telegram_username?' <span style="color:var(--muted);font-size:11px">@'+escapeHtml(w.telegram_username)+'</span>':'')+'</div>'
       +'<div class="wli-rank">'+rank.name+' · '+(w.total_orders||0)+' заявок</div></div>'
-      +'<div class="wli-score">'+(w.stars||0)+'⭐</div></div>'
+      +'<div class="wli-score">'+(w.stars||0)+'⭐</div>'
+      +'<div style="display:flex;gap:6px;margin-left:auto">'
+      +'<div class="admin-order-btn edit" onclick="event.stopPropagation();openStarsModal(adminWorkerById(\''+w.id+'\'))" title="Звёзды">⭐</div>'
+      +'<div class="admin-order-btn del" onclick="event.stopPropagation();askDeleteWorker(\''+w.id+'\',\''+escapeHtml((w.name||'').replace(/'/g,""))+'\')" title="Удалить">🗑️</div>'
+      +'</div></div>'
   }).join('');
-  list.querySelectorAll('.worker-list-item').forEach(el=>{el.addEventListener('click',()=>{const wid=el.dataset.wid;const w=data.find(x=>String(x.id)===wid);if(w)openStarsModal(w)})});
+  window._adminWorkersData = data;
+}
+
+function adminWorkerById(id) {
+  return (window._adminWorkersData || []).find(w => String(w.id) === String(id));
+}
+
+let deleteWorkerId = null;
+function askDeleteWorker(id, name) {
+  deleteWorkerId = id;
+  document.getElementById('delete-info').textContent = 'Удалить рабочего ' + name + ' (ID: ' + id + ') из системы?';
+  document.getElementById('modal-delete').classList.remove('hidden');
+  // Переключаем модалку на удаление рабочего
+  document.getElementById('btn-confirm-delete').onclick = confirmDeleteWorker;
+}
+
+async function confirmDeleteWorker() {
+  if (!deleteWorkerId) return;
+  closeModal('modal-delete');
+  const res = await apiCall('DELETE', '/api/worker-auth?id=' + deleteWorkerId);
+  if (res.success || res.ok) {
+    showToast('🗑️ Рабочий удалён из системы', 'success');
+    deleteWorkerId = null;
+    loadAdminWorkers();
+    loadLeaderboard();
+  } else {
+    showToast(res.error || 'Ошибка удаления', 'error');
+  }
 }
 
 function openStarsModal(worker){
