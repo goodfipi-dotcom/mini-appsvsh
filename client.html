@@ -571,6 +571,19 @@ textarea.form-input { height: 100px; resize: none; }
     <label class="form-label">Адрес *</label>
     <input type="text" class="form-input" id="f-address" placeholder="Улица, дом, подъезд">
 
+    <label class="form-label">Как с вами удобнее связаться?</label>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(0,136,204,.06);border:1.5px solid rgba(0,136,204,.2);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;color:#0088cc;transition:all .2s">
+        <input type="checkbox" id="f-tg" style="accent-color:#0088cc;width:16px;height:16px"> Telegram
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(37,211,102,.06);border:1.5px solid rgba(37,211,102,.2);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;color:#25d366;transition:all .2s">
+        <input type="checkbox" id="f-wa" style="accent-color:#25d366;width:16px;height:16px"> WhatsApp
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(148,163,184,.06);border:1.5px solid rgba(148,163,184,.2);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;color:#94a3b8;transition:all .2s">
+        <input type="checkbox" id="f-call" checked style="accent-color:#94a3b8;width:16px;height:16px"> Звонок
+      </label>
+    </div>
+
     <button class="form-btn" id="f-btn" onclick="submitOrder()">📝 Отправить заявку</button>
 
     <div class="form-msg" id="f-msg"></div>
@@ -754,7 +767,7 @@ textarea.form-input { height: 100px; resize: none; }
 <!-- FOOTER -->
 <footer class="footer">
   <div class="footer-logo">VSH<span>.</span></div>
-  <p>Октябрьский · Туймазы · Рабочая Сила </p>
+  <p>Октябрьский · Туймазы · Работа есть</p>
   <p style="margin-top:8px">© 2026 VSH Service. Все права защищены.</p>
 </footer>
 
@@ -768,6 +781,10 @@ async function submitOrder() {
   const task    = document.getElementById('f-task').value.trim();
   const address = document.getElementById('f-address').value.trim();
   const category = document.getElementById('f-category')?.value || 'Грузчики';
+  const contactTg = document.getElementById('f-tg')?.checked;
+  const contactWa = document.getElementById('f-wa')?.checked;
+  const contactCall = document.getElementById('f-call')?.checked;
+  const contactMethod = [contactTg && 'Telegram', contactWa && 'WhatsApp', contactCall && 'Звонок'].filter(Boolean).join(', ') || 'Звонок';
   const msgEl   = document.getElementById('f-msg');
   const btn     = document.getElementById('f-btn');
 
@@ -800,7 +817,8 @@ async function submitOrder() {
       body: JSON.stringify({
         source: 'client',
         name, phone, city, task, address,
-        service: category + ': ' + task
+        service: category + ': ' + task,
+        comment: 'Связь: ' + contactMethod
       })
     });
     const data = await res.json();
