@@ -453,7 +453,7 @@ textarea.form-input { height: 100px; resize: none; }
   <div class="hero-logo">VSH<span>.</span></div>
   <div class="hero-tagline">Октябрьский · Туймазы</div>
   <h1 class="hero-title">Рабочие руки за 30 минут</h1>
-  <p class="hero-sub">Грузчики, мастера и разнорабочие — без посредников, по самым честным ценам. Забудьте про Авито и переплаты. Одна заявка — и мы всё организуем.</p>
+  <p class="hero-sub">Грузчики, мастера и разнорабочие. Одна заявка — подберём бригаду и организуем работу под ключ.</p>
   <a href="#order" class="hero-btn">📝 Оставить заявку</a>
 </section>
 
@@ -469,7 +469,7 @@ textarea.form-input { height: 100px; resize: none; }
     <div class="adv-card">
       <div class="adv-icon">💰</div>
       <div class="adv-name">Честные цены</div>
-      <div class="adv-desc">Никаких посредников и накруток. Самые доступные цены на рынке — забудьте про Авито и переплаты.</div>
+      <div class="adv-desc">Честная цена, известная до начала работы. Без неожиданных доплат в конце.</div>
     </div>
     <div class="adv-card">
       <div class="adv-icon">⭐</div>
@@ -479,7 +479,7 @@ textarea.form-input { height: 100px; resize: none; }
     <div class="adv-card">
       <div class="adv-icon">🔒</div>
       <div class="adv-name">Полная прозрачность</div>
-      <div class="adv-desc">Вы сразу видите стоимость работы. Никаких скрытых комиссий и неожиданных доплат.</div>
+      <div class="adv-desc">Вы сразу видите стоимость работы. Без неожиданных доплат.</div>
     </div>
     <div class="adv-card">
       <div class="adv-icon">🏗️</div>
@@ -497,7 +497,7 @@ textarea.form-input { height: 100px; resize: none; }
 <!-- PRICES -->
 <section class="prices" id="prices">
   <div class="prices-title">💰 Наши цены</div>
-  <div class="prices-sub">Мы держим цены ниже рынка за счёт прямой работы без посредников</div>
+  <div class="prices-sub">Стоимость считаем по объёму работы и называем до выезда</div>
   <div class="price-grid">
     <div class="price-card" onclick="selectCategory(this, 'Грузчики')">
       <div class="price-emoji">📦</div>
@@ -509,7 +509,7 @@ textarea.form-input { height: 100px; resize: none; }
         +100 ₽/час — тяжёлая работа<br>
         +100 ₽/час — подъём на этаж / сложные условия
       </div>
-      <div class="price-badge">Дешевле Авито</div>
+      <div class="price-badge">Цена до выезда</div>
     </div>
     <div class="price-card" onclick="selectCategory(this, 'Разнорабочие')">
       <div class="price-emoji">🔨</div>
@@ -536,7 +536,7 @@ textarea.form-input { height: 100px; resize: none; }
       <div class="price-badge">Быстрый выезд</div>
     </div>
   </div>
-  <div class="prices-note">💡 <b>Итоговая цена</b> зависит от условий, но всегда остаётся <b>ниже рынка</b>. Без посредников — вы платите напрямую исполнителю.</div>
+  <div class="prices-note">💡 <b>Итоговая цена</b> зависит от объёма работы. Сумму согласуем до начала — без доплат по ходу.</div>
 </section>
 
 <!-- FORM -->
@@ -602,7 +602,7 @@ textarea.form-input { height: 100px; resize: none; }
   <div class="reception-about">
     <div class="reception-section-title">💎 Почему VSH Service?</div>
     <div class="reception-text">
-      <b>VSH Service</b> — это современная платформа быстрого найма рабочих в Октябрьском и Туймазах. Мы создали экосистему, в которой заказчики получают лучший сервис по самым честным ценам, а исполнители — стабильную работу без посредников.
+      <b>VSH Service</b> — это современная платформа быстрого найма рабочих в Октябрьском и Туймазах. Мы создали экосистему, в которой заказчики получают проверенных исполнителей, а исполнители — стабильный поток заказов.
     </div>
     <div class="reception-features">
       <div class="reception-feature">
@@ -615,7 +615,7 @@ textarea.form-input { height: 100px; resize: none; }
       </div>
       <div class="reception-feature">
         <div class="rf-icon">💰</div>
-        <div class="rf-text"><b>Прозрачная цена без накруток.</b> Вы сразу видите стоимость. Никаких посредников, скрытых комиссий и неожиданных доплат.</div>
+        <div class="rf-text"><b>Прозрачная цена.</b> Стоимость известна до начала работы — без неожиданных доплат.</div>
       </div>
       <div class="reception-feature">
         <div class="rf-icon">⚡</div>
@@ -984,7 +984,7 @@ function copyRefLink() {
 
 function shareRefLink() {
   const link = document.getElementById('ref-link').value;
-  const text = '💪 VSH Service — рабочие руки за 30 минут! Без посредников, дешевле Авито. Попробуй: ' + link;
+  const text = '💪 VSH Service — рабочие руки за 30 минут! Попробуй: ' + link;
   if (navigator.share) {
     navigator.share({ title: 'VSH Service', text: text, url: link }).catch(() => {});
   } else {

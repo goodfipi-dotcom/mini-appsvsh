@@ -60,17 +60,9 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, worker, isAdmin });
       }
 
-      // Новый человек — нужен код приглашения (проверяется на сервере)
-      const invite = String(req.body?.invite_code ?? req.body?.password ?? '');
-      const expected = String(process.env.WORKER_PIN || '');
-
-      if (!expected || invite !== expected) {
-        return res.status(403).json({
-          error: 'bad_invite',
-          message: 'Неверный код приглашения. Запросите его у диспетчера'
-        });
-      }
-
+      // Кода приглашения больше нет: кто открыл приложение из бота — тот и зарегистрирован.
+      // Контроль остаётся у диспетчера: любого можно отключить (active = FALSE),
+      // а телефон заказчика рабочий получает только после того, как принял заявку.
       await query(
         `INSERT INTO workers (id, telegram_id, name, telegram_username, stars, total_orders, active, role, status, notify_orders, last_seen)
          VALUES ($1,$1,$2,$3,0,0,TRUE,'worker','available',TRUE,NOW())

@@ -282,22 +282,13 @@ textarea.input{height:80px;resize:none}
   </div>
 </div>
 
-<!-- AUTH -->
+<!-- ВХОД: кода больше нет. Приложение узнаёт человека по его Telegram-аккаунту. -->
 <div id="auth-page" class="page hidden">
   <div class="auth-card">
     <div class="auth-logo">VSH<span>.</span></div>
-    <div class="auth-sub">Введите PIN-код для входа в систему бригад</div>
-    <div class="pin-display">
-      <div class="pin-dot" id="dot-0"></div><div class="pin-dot" id="dot-1"></div>
-      <div class="pin-dot" id="dot-2"></div><div class="pin-dot" id="dot-3"></div>
-    </div>
-    <div class="numpad">
-      <button class="num-btn" onclick="pinInput('1')">1</button><button class="num-btn" onclick="pinInput('2')">2</button><button class="num-btn" onclick="pinInput('3')">3</button>
-      <button class="num-btn" onclick="pinInput('4')">4</button><button class="num-btn" onclick="pinInput('5')">5</button><button class="num-btn" onclick="pinInput('6')">6</button>
-      <button class="num-btn" onclick="pinInput('7')">7</button><button class="num-btn" onclick="pinInput('8')">8</button><button class="num-btn" onclick="pinInput('9')">9</button>
-      <button class="num-btn" style="opacity:.2"></button><button class="num-btn" onclick="pinInput('0')">0</button><button class="num-btn del" onclick="pinDelete()">⌫</button>
-    </div>
-    <div class="auth-error" id="auth-error">❌ Неверный PIN-код</div>
+    <div class="auth-sub" id="auth-status">Входим…</div>
+    <div class="auth-error" id="auth-error"></div>
+    <button class="btn btn-outline btn-sm hidden" id="auth-retry" style="margin-top:16px" onclick="tryAutoLogin()">Повторить</button>
   </div>
 </div>
 
@@ -672,7 +663,7 @@ const ACHIEVEMENTS = [
 ];
 
 let currentWorker = null, selectedOrder = null, selectedWorkerForRate = null;
-let selectedStars = 0, selectedCity = 'Октябрьский', pinCode = '';
+let selectedStars = 0, selectedCity = 'Октябрьский';
 let rulesTimerID = null, callTimerID = null, deleteOrderId = null;
 
 // UTILS
@@ -710,12 +701,7 @@ function escapeHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// PIN
-function pinInput(d){if(pinCode.length>=4)return;pinCode+=d;updateDots();if(pinCode.length===4)checkPin()}
-function pinDelete(){pinCode=pinCode.slice(0,-1);updateDots();document.getElementById('auth-error').classList.remove('show')}
-function updateDots(){for(let i=0;i<4;i++)document.getElementById('dot-'+i).classList.toggle('filled',i<pinCode.length)}
-
-// ── REFERRAL FLOW (before PIN) ──
+// ── REFERRAL FLOW (открывается по желанию, вход не блокирует) ──
 const REFERRAL_STEP_KEY_PREFIX = 'vsh_referral_step_done_';
 
 function getEntryTelegramUser() {
@@ -781,62 +767,57 @@ function skipReferralCode() {
 }
 
 function initEntryFlow() {
-  const key = getReferralStepKey();
   // Вне Telegram подпись не получить — работать нельзя
   if (!INIT_DATA) {
     showAuthPage();
-    const sub = document.querySelector('.auth-sub');
-    if (sub) sub.textContent = 'Откройте приложение через Telegram — из бота VSH Service';
+    setAuthStatus('Откройте приложение через бота VSH Service в Telegram');
     return;
   }
-
-  const done = (() => { try { return localStorage.getItem(key); } catch (e) { return null; } })();
-  if (done || !key) tryAutoLogin();
-  else showReferralPage();
+  // Никаких кодов и промежуточных экранов — сразу входим
+  tryAutoLogin();
 }
 
-/** Свои заходят молча: сервер узнаёт человека по подписи Telegram */
+function setAuthStatus(text) {
+  const el = document.getElementById('auth-status');
+  if (el) el.textContent = text;
+}
+
+function showAuthError(text, canRetry) {
+  const err = document.getElementById('auth-error');
+  if (err) { err.textContent = text; err.classList.add('show'); }
+  const retry = document.getElementById('auth-retry');
+  if (retry) retry.classList.toggle('hidden', !canRetry);
+}
+
+/** Вход по Telegram-аккаунту: кто открыл приложение из бота — тот и заходит */
 async function tryAutoLogin() {
   showAuthPage();
-  const sub = document.querySelector('.auth-sub');
-  if (sub) sub.textContent = 'Проверяем доступ…';
+  setAuthStatus('Входим…');
+  showAuthError('', false);
 
-  const res = await apiCall('POST', '/api/worker-auth', {});
+  let res;
+  try {
+    res = await apiCall('POST', '/api/worker-auth', {});
+  } catch (e) {
+    res = null;
+  }
 
   if (res?.ok && res.worker) {
     currentWorker = res.worker;
     isAdminUser = !!res.isAdmin;
+    if (res.isNew) showToast('Добро пожаловать в VSH Service!', 'success');
     enterApp();
     return;
   }
 
   if (res?.error === 'access_revoked') {
-    if (sub) sub.textContent = 'Доступ отключён диспетчером';
+    setAuthStatus('Доступ закрыт');
+    showAuthError('Диспетчер отключил ваш доступ. Напишите ему, если это ошибка.', false);
     return;
   }
 
-  // Новый человек — просим код приглашения
-  if (sub) sub.textContent = 'Введите код приглашения от диспетчера';
-}
-
-async function checkPin(){
-  const code = pinCode;
-  const res = await apiCall('POST', '/api/worker-auth', { invite_code: code });
-
-  if (!res?.ok) {
-    const err = document.getElementById('auth-error');
-    if (err) {
-      err.textContent = res?.message || '❌ Неверный код';
-      err.classList.add('show');
-    }
-    setTimeout(() => { pinCode=''; updateDots(); err?.classList.remove('show'); }, 1600);
-    return;
-  }
-
-  currentWorker = res.worker;
-  isAdminUser = !!res.isAdmin;
-  if (res.isNew) showToast('✅ Доступ открыт. Добро пожаловать!', 'success');
-  enterApp();
+  setAuthStatus('Не удалось войти');
+  showAuthError(res?.message || 'Нет связи с сервером. Проверьте интернет.', true);
 }
 
 function enterApp(){
@@ -847,7 +828,7 @@ function enterApp(){
 }
 
 function logout(){
-  currentWorker=null;pinCode='';updateDots();
+  currentWorker=null;
   // Закрываем Telegram WebApp если доступен
   if(tg&&tg.close){tg.close()}else{document.getElementById('app').classList.add('hidden');document.getElementById('auth-page').classList.remove('hidden')}
 }
