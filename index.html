@@ -644,9 +644,10 @@ const tg = window.Telegram?.WebApp || null;
 if (tg) { tg.ready(); tg.expand(); }
 
 const API = 'https://mini-appsvsh.vercel.app';
-const PIN = '2026';
-const ADMIN_ID = 7693616720;
-const ADMIN_SECRET = 'vsh2026secure'; // Должен совпадать с ADMIN_SECRET в Vercel env
+// Секретов здесь больше нет: личность подтверждает подпись Telegram (initData),
+// права администратора определяет сервер. Всё, что лежит в этом файле, видит любой посетитель.
+const INIT_DATA = tg?.initData || '';
+let isAdminUser = false;
 
 const RANKS = [
   {name:'🔩 Новобранец',icon:'🔩',min:0},{name:'🪛 Подмастерье',icon:'🪛',min:3},
@@ -684,14 +685,23 @@ function showToast(msg,type=''){const t=document.getElementById('toast');t.textC
 function closeModal(id){document.getElementById(id).classList.add('hidden');if(rulesTimerID){clearInterval(rulesTimerID);rulesTimerID=null}if(callTimerID){clearInterval(callTimerID);callTimerID=null}}
 
 async function apiCall(method, endpoint, body) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
-  // Добавляем ADMIN_SECRET для защищённых операций
-  if (method === 'DELETE' || method === 'PATCH') {
-    opts.headers['X-Admin-Secret'] = ADMIN_SECRET;
-  }
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      // Подпись Telegram — ею сервер проверяет, кто именно обращается
+      'X-Telegram-Init-Data': INIT_DATA
+    }
+  };
   if (body) opts.body = JSON.stringify(body);
-  try { const r = await fetch(API + endpoint, opts); return await r.json(); }
-  catch (e) { return { error: e.message }; }
+  try {
+    const r = await fetch(API + endpoint, opts);
+    const data = await r.json();
+    if (r.status === 401 || r.status === 403) {
+      showToast(data.message || 'Доступ запрещён', 'warn');
+    }
+    return data;
+  } catch (e) { return { error: e.message }; }
 }
 
 // Защита от XSS — экранирование HTML
@@ -772,34 +782,67 @@ function skipReferralCode() {
 
 function initEntryFlow() {
   const key = getReferralStepKey();
-  // Если не Telegram / нет user id — просто показываем PIN.
-  if (!key) {
+  // Вне Telegram подпись не получить — работать нельзя
+  if (!INIT_DATA) {
     showAuthPage();
+    const sub = document.querySelector('.auth-sub');
+    if (sub) sub.textContent = 'Откройте приложение через Telegram — из бота VSH Service';
     return;
   }
 
   const done = (() => { try { return localStorage.getItem(key); } catch (e) { return null; } })();
-  if (done) showAuthPage();
+  if (done || !key) tryAutoLogin();
   else showReferralPage();
 }
 
+/** Свои заходят молча: сервер узнаёт человека по подписи Telegram */
+async function tryAutoLogin() {
+  showAuthPage();
+  const sub = document.querySelector('.auth-sub');
+  if (sub) sub.textContent = 'Проверяем доступ…';
+
+  const res = await apiCall('POST', '/api/worker-auth', {});
+
+  if (res?.ok && res.worker) {
+    currentWorker = res.worker;
+    isAdminUser = !!res.isAdmin;
+    enterApp();
+    return;
+  }
+
+  if (res?.error === 'access_revoked') {
+    if (sub) sub.textContent = 'Доступ отключён диспетчером';
+    return;
+  }
+
+  // Новый человек — просим код приглашения
+  if (sub) sub.textContent = 'Введите код приглашения от диспетчера';
+}
+
 async function checkPin(){
-  if(pinCode!==PIN){document.getElementById('auth-error').classList.add('show');setTimeout(()=>{pinCode='';updateDots();document.getElementById('auth-error').classList.remove('show')},1200);return}
-  const userId=tg?.initDataUnsafe?.user?.id||Date.now();
-  const userName=tg?.initDataUnsafe?.user?.first_name||'Рабочий';
-  const userUsername=tg?.initDataUnsafe?.user?.username||'';
-  try{
-    const res=await apiCall('POST','/api/worker-auth',{password:PIN,telegram_id:userId,first_name:userName,telegram_username:userUsername});
-    currentWorker=res.ok?res.worker:{id:userId,name:userName,telegram_username:userUsername,stars:0,total_orders:0,bank_details:''};
-  }catch{currentWorker={id:userId,name:userName,telegram_username:userUsername,stars:0,total_orders:0,bank_details:''}}
+  const code = pinCode;
+  const res = await apiCall('POST', '/api/worker-auth', { invite_code: code });
+
+  if (!res?.ok) {
+    const err = document.getElementById('auth-error');
+    if (err) {
+      err.textContent = res?.message || '❌ Неверный код';
+      err.classList.add('show');
+    }
+    setTimeout(() => { pinCode=''; updateDots(); err?.classList.remove('show'); }, 1600);
+    return;
+  }
+
+  currentWorker = res.worker;
+  isAdminUser = !!res.isAdmin;
+  if (res.isNew) showToast('✅ Доступ открыт. Добро пожаловать!', 'success');
   enterApp();
 }
 
 function enterApp(){
   document.getElementById('auth-page').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
-  const uid=tg?.initDataUnsafe?.user?.id||currentWorker?.id;
-  if(String(uid)===String(ADMIN_ID))document.getElementById('nav-admin').classList.remove('hidden');
+  if (isAdminUser) document.getElementById('nav-admin').classList.remove('hidden');
   updateHeaderUI();loadOrders();
 }
 
@@ -948,7 +991,8 @@ function rulesConfirmed(){if(rulesTimerID){clearInterval(rulesTimerID);rulesTime
 
 async function openCallModal(){
   // Атомарное принятие — если 409, значит уже занята
-  const res=await apiCall('POST','/api/order',{action:'accept_order',order_id:selectedOrder.id,worker_id:currentWorker.id});
+  // worker_id не передаём: сервер берёт личность из подписи Telegram, иначе можно было бы принять заявку за другого
+  const res=await apiCall('POST','/api/order',{action:'accept_order',order_id:selectedOrder.id});
 
   if(res.error==='already_taken'){
     showToast('⚠️ Заявка уже принята другим рабочим','warn');loadOrders();return;

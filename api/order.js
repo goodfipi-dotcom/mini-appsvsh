@@ -1,334 +1,348 @@
-import pg from 'pg';
-const { Pool } = pg;
+import { query, queryOne, normalizePhone } from './_db.js';
+import { authenticate, denyResponse } from './_auth.js';
+import { sendTelegram, broadcast, findRecipientsForOrder, logOrderEvent } from './_notify.js';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+const MINI_APP_URL = process.env.MINI_APP_URL || 'https://mini-appsvsh.vercel.app';
 
-const TG_TOKEN = process.env.TG_TOKEN;
-const ADMIN_ID = process.env.ADMIN_ID;
-const BOT_API  = `https://api.telegram.org/bot${TG_TOKEN}`;
-
-async function sendTG(chat_id, text, reply_markup = null) {
-  const payload = { chat_id, text, parse_mode: 'HTML' };
-  if (reply_markup) payload.reply_markup = JSON.stringify(reply_markup);
-  try {
-    await fetch(`${BOT_API}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  } catch (e) {
-    console.error('TG send error:', e.message);
-  }
-}
-
-async function initDB() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS orders (
-      id SERIAL PRIMARY KEY,
-      name TEXT,
-      address TEXT,
-      task TEXT,
-      phone TEXT,
-      service TEXT,
-      city TEXT DEFAULT 'Октябрьский',
-      client_price INTEGER DEFAULT 0,
-      worker_price INTEGER DEFAULT 0,
-      margin INTEGER DEFAULT 0,
-      workers_needed INTEGER DEFAULT 1,
-      comment TEXT,
-      status TEXT DEFAULT 'waiting_admin',
-      accepted_by TEXT[] DEFAULT '{}',
-      created_at TIMESTAMP DEFAULT NOW()
-    );
-  `);
-  const cols = await pool.query(`
-    SELECT column_name FROM information_schema.columns WHERE table_name = 'orders'
-  `);
-  const existing = cols.rows.map(r => r.column_name);
-  if (!existing.includes('city'))  await pool.query(`ALTER TABLE orders ADD COLUMN city TEXT DEFAULT 'Октябрьский'`);
-  if (!existing.includes('phone')) await pool.query(`ALTER TABLE orders ADD COLUMN phone TEXT DEFAULT ''`);
-}
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
 const ALLOWED_ORIGINS = [
   'https://mini-appsvsh.vercel.app',
-  'https://mini-appsvsh.vercel.app/',
+  'https://goodfipi-dotcom.github.io',
+  'http://localhost:3000'
 ];
 
-// Rate limiting (в памяти — сбрасывается при рестарте serverless, но достаточно для защиты от ботов)
+// Ограничение частоты: в памяти, сбрасывается при холодном старте — достаточно против ботов
 const rateLimitMap = new Map();
 function checkRateLimit(key, maxPerHour = 3) {
   const now = Date.now();
-  const windowMs = 3600000; // 1 час
-  if (!rateLimitMap.has(key)) rateLimitMap.set(key, []);
-  const timestamps = rateLimitMap.get(key).filter(t => now - t < windowMs);
+  const windowMs = 3600000;
+  const timestamps = (rateLimitMap.get(key) || []).filter(t => now - t < windowMs);
   timestamps.push(now);
   rateLimitMap.set(key, timestamps);
   return timestamps.length <= maxPerHour;
 }
 
-// Санитизация — убираем HTML теги и опасные символы
 function sanitize(str) {
   if (!str) return '';
   return String(str).replace(/<[^>]*>/g, '').replace(/['"`;\\]/g, '').trim().slice(0, 500);
 }
 
-// Валидация телефона
 function isValidPhone(phone) {
-  if (!phone) return false;
-  const clean = phone.replace(/\D/g, '');
+  const clean = normalizePhone(phone);
   return clean.length >= 10 && clean.length <= 15;
 }
 
-export default async function handler(req, res) {
-  // CORS — только наш домен
-  const origin = req.headers.origin || '';
-  if (ALLOWED_ORIGINS.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-    res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS[0]);
+const ALLOWED_SOURCES = ['avito', 'direct', 'telegram', 'referral', 'organic', 'social', 'admin'];
+function normalizeSource(src) {
+  const s = String(src || '').toLowerCase().trim();
+  return ALLOWED_SOURCES.includes(s) ? s : 'direct';
+}
+
+function orderCard(order, title) {
+  return `${title}\n\n` +
+    `📍 ${order.city || 'Октябрьский'}\n` +
+    `🔧 ${order.service || order.task || 'Задача'}\n` +
+    `🏠 ${order.address || ''}\n` +
+    `👷 Рабочих: ${order.workers_needed || 1}\n` +
+    (order.comment ? `💬 ${order.comment}\n` : '') +
+    (order.worker_price ? `💰 Оплата рабочему: ${order.worker_price} ₽\n` : '');
+}
+
+const openAppKeyboard = {
+  inline_keyboard: [[{ text: '🚀 Открыть VSH Service', web_app: { url: MINI_APP_URL } }]]
+};
+
+/** Находит или создаёт клиента по телефону. Возвращает id или null. */
+async function upsertClient({ phone, name, city, source, sourceDetail }) {
+  const clean = normalizePhone(phone);
+  if (!clean) return null;
+
+  const existing = await queryOne(
+    `SELECT id FROM clients WHERE REGEXP_REPLACE(COALESCE(phone,''), '\\D', '', 'g') = $1 LIMIT 1`,
+    [clean]
+  );
+
+  if (existing) {
+    await query(
+      `UPDATE clients SET total_orders = COALESCE(total_orders,0) + 1,
+                          last_activity = NOW(),
+                          name = CASE WHEN COALESCE(name,'') = '' THEN $2 ELSE name END
+       WHERE id = $1`,
+      [existing.id, name || '']
+    );
+    return existing.id;
   }
+
+  const created = await queryOne(
+    `INSERT INTO clients (phone, name, city, source, source_detail, total_orders, last_activity)
+     VALUES ($1,$2,$3,$4,$5,1,NOW()) RETURNING id`,
+    [clean, name || '', city || 'Октябрьский', source, sourceDetail || '']
+  );
+  return created?.id || null;
+}
+
+async function resolveCityId(cityName) {
+  if (!cityName) return null;
+  const row = await queryOne(
+    `SELECT id FROM cities WHERE LOWER(name) = LOWER($1) OR slug = LOWER($1) LIMIT 1`,
+    [String(cityName).trim()]
+  );
+  return row?.id || null;
+}
+
+/** Рассылка заявки подходящим рабочим + отчёт админу о недоставленных */
+async function publishToWorkers(order) {
+  const recipients = await findRecipientsForOrder(order);
+
+  if (recipients.length === 0) {
+    const adminId = String(process.env.ADMIN_ID || '').split(',')[0].trim();
+    if (adminId) {
+      await sendTelegram(adminId,
+        `⚠️ Заявка №${order.id} опубликована, но <b>подходящих рабочих не найдено</b>.\n` +
+        `Проверьте: активные рабочие, их города и специализации.`,
+        { orderId: order.id, type: 'no_recipients', role: 'admin' });
+    }
+    return { sent: 0, failed: 0 };
+  }
+
+  const result = await broadcast(
+    recipients,
+    orderCard(order, `🔥 <b>НОВАЯ ЗАЯВКА №${order.id}</b>`) + `\nОткройте приложение, чтобы принять заказ 👇`,
+    { keyboard: openAppKeyboard, orderId: order.id, type: 'new_order', role: 'worker' }
+  );
+
+  await logOrderEvent(order.id, 'published', 'system', 'system',
+    `разослано ${result.sent} из ${recipients.length}`);
+
+  return result;
+}
+
+export default async function handler(req, res) {
+  const origin = req.headers.origin || '';
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Secret');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Telegram-Init-Data, X-Admin-Secret');
+  res.setHeader('Vary', 'Origin');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    await initDB();
-
-    // ── Проверка ADMIN_SECRET для защищённых операций ──
+    // ── Изменение и удаление — только администратор ──
     if (req.method === 'DELETE' || req.method === 'PATCH') {
-      const secret = req.headers['x-admin-secret'] || req.body?.admin_secret || '';
-      if (ADMIN_SECRET && secret !== ADMIN_SECRET) {
-        return res.status(403).json({ error: 'Forbidden: invalid admin secret' });
+      const serverKey = process.env.ADMIN_SECRET || '';
+      const providedKey = req.headers['x-admin-secret'] || '';
+      const isServerCall = serverKey && providedKey === serverKey; // для бота на сервере
+
+      if (!isServerCall) {
+        const auth = await authenticate(req, { requireAdmin: true });
+        if (!auth.ok) return denyResponse(res, auth);
       }
     }
 
-    // ── GET — список заказов ──
+    // ── Список заявок ──
     if (req.method === 'GET') {
-      const { status } = req.query;
-      let query = 'SELECT * FROM orders';
+      const { status, client_id, worker_id, limit } = req.query;
+      const conditions = [];
       const params = [];
-      if (status) {
-        query += ' WHERE status = $1';
-        params.push(status);
-      }
-      query += ' ORDER BY created_at DESC';
-      const result = await pool.query(query, params);
-      return res.status(200).json(result.rows);
+
+      if (status)    { params.push(status);    conditions.push(`status = $${params.length}`); }
+      if (client_id) { params.push(client_id); conditions.push(`client_id = $${params.length}`); }
+      if (worker_id) { params.push(String(worker_id)); conditions.push(`worker_id = $${params.length}`); }
+
+      const where = conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '';
+      const max = Math.min(Number(limit) || 200, 500);
+
+      const { rows } = await query(
+        `SELECT * FROM orders${where} ORDER BY created_at DESC LIMIT ${max}`,
+        params
+      );
+      return res.status(200).json(rows);
     }
 
-    // ── DELETE — удалить заказ (только админ) ──
+    // ── Удаление заявки ──
     if (req.method === 'DELETE') {
       const { id } = req.query;
-      if (!id) return res.status(400).json({ error: 'Missing order id' });
-      await pool.query('DELETE FROM orders WHERE id = $1', [id]);
+      if (!id) return res.status(400).json({ error: 'Не указан номер заявки' });
+      await query('DELETE FROM orders WHERE id = $1', [id]);
+      await logOrderEvent(id, 'deleted', 'admin', 'admin');
       return res.status(200).json({ success: true, deleted: id });
     }
 
-    // ── PATCH — редактировать заказ / одобрить (админ) ──
+    // ── Изменение заявки ──
     if (req.method === 'PATCH') {
-      const { id, service, task, address, phone, city, comment, workers_needed, status } = req.body;
-      if (!id) return res.status(400).json({ error: 'Missing order id' });
+      const b = req.body || {};
+      if (!b.id) return res.status(400).json({ error: 'Не указан номер заявки' });
 
-      // Собираем поля для обновления
+      const editable = ['service', 'task', 'address', 'phone', 'city', 'comment',
+                        'workers_needed', 'status', 'client_price', 'worker_price',
+                        'margin', 'service_id'];
       const fields = [];
       const values = [];
-      let idx = 1;
 
-      if (service !== undefined)        { fields.push(`service = $${idx++}`);        values.push(service); }
-      if (task !== undefined)            { fields.push(`task = $${idx++}`);            values.push(task); }
-      if (address !== undefined)         { fields.push(`address = $${idx++}`);         values.push(address); }
-      if (phone !== undefined)           { fields.push(`phone = $${idx++}`);           values.push(phone); }
-      if (city !== undefined)            { fields.push(`city = $${idx++}`);            values.push(city); }
-      if (comment !== undefined)         { fields.push(`comment = $${idx++}`);         values.push(comment); }
-      if (workers_needed !== undefined)  { fields.push(`workers_needed = $${idx++}`);  values.push(workers_needed); }
-      if (status !== undefined)          { fields.push(`status = $${idx++}`);          values.push(status); }
-
-      if (fields.length === 0) return res.status(400).json({ error: 'No fields to update' });
-
-      values.push(id);
-      const result = await pool.query(
-        `UPDATE orders SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
-        values
-      );
-
-      if (result.rowCount === 0) return res.status(404).json({ error: 'Order not found' });
-
-      const updatedOrder = result.rows[0];
-
-      // Если заявка только что стала published — рассылаем рабочим
-      if (status === 'published' && updatedOrder.status === 'published') {
-        try {
-          const workersResult = await pool.query('SELECT id FROM workers');
-          for (const worker of workersResult.rows) {
-            try {
-              const msgText = `🔥 <b>НОВАЯ ЗАЯВКА №${updatedOrder.id}</b>\n\n` +
-                `📍 ${updatedOrder.city || 'Октябрьский'}\n` +
-                `🔧 ${updatedOrder.service || updatedOrder.task || 'Задача'}\n` +
-                `🏠 ${updatedOrder.address || ''}\n` +
-                `👷 Рабочих: ${updatedOrder.workers_needed || 1}\n` +
-                `\nОткройте приложение чтобы принять заказ!`;
-
-              await fetch(`${BOT_API}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: worker.id,
-                  text: msgText,
-                  parse_mode: 'HTML',
-                  reply_markup: JSON.stringify({
-                    inline_keyboard: [[{
-                      text: '🚀 Открыть VSH Service',
-                      web_app: { url: 'https://mini-appsvsh.vercel.app' }
-                    }]]
-                  })
-                })
-              });
-            } catch (e) { /* пропускаем */ }
-          }
-        } catch (e) {
-          console.error('PATCH broadcast error:', e.message);
+      for (const key of editable) {
+        if (b[key] !== undefined) {
+          values.push(b[key]);
+          fields.push(`${key} = $${values.length}`);
         }
       }
+      if (b.city !== undefined) {
+        const cityId = await resolveCityId(b.city);
+        if (cityId) { values.push(cityId); fields.push(`city_id = $${values.length}`); }
+      }
+      if (b.status === 'completed') fields.push(`completed_at = NOW()`);
+      if (!fields.length) return res.status(400).json({ error: 'Нечего обновлять' });
 
-      return res.status(200).json({ success: true, order: updatedOrder });
+      fields.push(`updated_at = NOW()`);
+      values.push(b.id);
+
+      const updated = await queryOne(
+        `UPDATE orders SET ${fields.join(', ')} WHERE id = $${values.length} RETURNING *`,
+        values
+      );
+      if (!updated) return res.status(404).json({ error: 'Заявка не найдена' });
+
+      let delivery = null;
+      if (b.status === 'published') {
+        delivery = await publishToWorkers(updated);
+      } else if (b.status) {
+        await logOrderEvent(updated.id, b.status, 'admin', 'admin');
+      }
+
+      return res.status(200).json({ success: true, order: updated, delivery });
     }
 
-    // ── POST ──
     if (req.method === 'POST') {
-      const body = req.body;
+      const body = req.body || {};
 
-      // ── Принятие заявки рабочим (атомарное — защита от двойного принятия) ──
+      // ── Рабочий принимает заявку (атомарно, личность из подписи Telegram) ──
       if (body.action === 'accept_order') {
-        const { order_id, worker_id } = body;
-        if (!order_id || !worker_id) {
-          return res.status(400).json({ error: 'Missing order_id or worker_id' });
-        }
-        // UPDATE только если status = 'published' — атомарная операция
-        const result = await pool.query(
-          `UPDATE orders 
-           SET status = 'accepted', accepted_by = array_append(accepted_by, $2::text)
-           WHERE id = $1 AND status = 'published'
-           RETURNING *`,
-          [order_id, String(worker_id)]
+        const auth = await authenticate(req, { requireWorker: true });
+        if (!auth.ok) return denyResponse(res, auth);
+
+        const workerId = auth.telegramId; // берём из подписи, а не из тела — иначе можно принять за другого
+        const { order_id } = body;
+        if (!order_id) return res.status(400).json({ error: 'Не указан номер заявки' });
+
+        const order = await queryOne(
+          `UPDATE orders
+              SET status = 'accepted',
+                  worker_id = $2,
+                  accepted_by = array_append(accepted_by, $2::text),
+                  updated_at = NOW()
+            WHERE id = $1 AND status = 'published'
+          RETURNING *`,
+          [order_id, workerId]
         );
-        if (result.rowCount === 0) {
+
+        if (!order) {
           return res.status(409).json({ error: 'already_taken', message: 'Заявка уже принята другим рабочим' });
         }
-        const order = result.rows[0];
-        try {
-          await sendTG(ADMIN_ID,
-            `👷 <b>Заявка №${order_id} принята!</b>\n` +
-            `Рабочий ID: ${worker_id}\n` +
-            `🔧 ${order.service || order.task}\n📍 ${order.city}, ${order.address}`
-          );
-        } catch (e) {}
+
+        await query(`UPDATE workers SET status = 'busy' WHERE id = $1`, [workerId]).catch(() => {});
+        await logOrderEvent(order.id, 'accepted', workerId, 'worker');
+
+        const workerName = auth.worker?.name || auth.user?.first_name || workerId;
+        const adminId = String(process.env.ADMIN_ID || '').split(',')[0].trim();
+        if (adminId) {
+          await sendTelegram(adminId,
+            `👷 <b>Заявка №${order.id} принята</b>\n\n` +
+            `Рабочий: ${workerName} (${workerId})\n` +
+            `🔧 ${order.service || order.task}\n📍 ${order.city}, ${order.address}\n` +
+            `📞 Клиент: ${order.phone}`,
+            { orderId: order.id, type: 'accepted', role: 'admin' });
+        }
+
         return res.status(200).json({ success: true, phone: order.phone, order });
       }
 
-      // ── Создание заказа ──
       const {
-        name, address, task, phone, source, service,
-        city, client_price, worker_price, margin,
-        comment, workers_needed
+        name, address, task, phone, source, source_detail, service,
+        city, client_price, worker_price, margin, comment, workers_needed, ref
       } = body;
 
+      // ── Заявка, созданная администратором вручную ──
       if (source === 'admin') {
-        const result = await pool.query(
-          `INSERT INTO orders (service, address, phone, city, client_price, worker_price, margin, workers_needed, comment, status)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'published') RETURNING id`,
-          [service || task || '', address || '', phone || '', city || 'Октябрьский',
-           client_price || 0, worker_price || 0, margin || 0, workers_needed || 1, comment || '']
+        const auth = await authenticate(req, { requireAdmin: true });
+        if (!auth.ok) return denyResponse(res, auth);
+
+        const cityName = sanitize(city) || 'Октябрьский';
+        const cityId = await resolveCityId(cityName);
+        const clientId = await upsertClient({
+          phone, name, city: cityName, source: 'admin', sourceDetail: source_detail
+        });
+
+        const created = await queryOne(
+          `INSERT INTO orders (service, task, address, phone, city, city_id, client_id,
+                               client_price, worker_price, margin, workers_needed, comment,
+                               source, status)
+           VALUES ($1,$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'admin','published') RETURNING *`,
+          [sanitize(service) || sanitize(task) || '', sanitize(address), normalizePhone(phone),
+           cityName, cityId, clientId, client_price || 0, worker_price || 0, margin || 0,
+           workers_needed || 1, sanitize(comment)]
         );
-        const orderId = result.rows[0].id;
 
-        // Рассылка уведомлений всем рабочим через Telegram Bot API
-        try {
-          const workersResult = await pool.query('SELECT id FROM workers');
-          for (const worker of workersResult.rows) {
-            try {
-              const msgText = `🔥 <b>НОВАЯ ЗАЯВКА №${orderId}</b>\n\n` +
-                `📍 ${city || 'Октябрьский'}\n` +
-                `🔧 ${service || task}\n` +
-                `🏠 ${address}\n` +
-                `👷 Рабочих: ${workers_needed || 1}\n` +
-                (comment ? `💬 ${comment}\n` : '') +
-                `\nОткройте приложение чтобы принять заказ!`;
+        await logOrderEvent(created.id, 'created', auth.telegramId, 'admin');
+        const delivery = await publishToWorkers(created);
 
-              await fetch(`${BOT_API}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  chat_id: worker.id,
-                  text: msgText,
-                  parse_mode: 'HTML',
-                  reply_markup: JSON.stringify({
-                    inline_keyboard: [[{
-                      text: '🚀 Открыть VSH Service',
-                      web_app: { url: 'https://mini-appsvsh.vercel.app' }
-                    }]]
-                  })
-                })
-              });
-            } catch (e) { /* рабочий мог заблокировать бота */ }
-          }
-        } catch (e) {
-          console.error('Workers broadcast error:', e.message);
-        }
-
-        return res.status(200).json({ success: true, orderId });
-      } else {
-        // Заявка от заказчика (с сайта)
-
-        // Валидация обязательных полей
-        if (!task || !sanitize(task)) {
-          return res.status(400).json({ error: 'Опишите задачу' });
-        }
-        if (!phone || !isValidPhone(phone)) {
-          return res.status(400).json({ error: 'Введите корректный номер телефона' });
-        }
-        if (!address || !sanitize(address)) {
-          return res.status(400).json({ error: 'Укажите адрес' });
-        }
-
-        // Rate limiting: макс 3 заявки в час с одного телефона
-        const cleanPhone = phone.replace(/\D/g, '');
-        if (!checkRateLimit('phone:' + cleanPhone, 3)) {
-          return res.status(429).json({ error: 'Слишком много заявок. Попробуйте через час.' });
-        }
-
-        // Санитизация
-        const safeName = sanitize(name);
-        const safeTask = sanitize(task);
-        const safeAddress = sanitize(address);
-        const safeCity = sanitize(city) || 'Октябрьский';
-
-        const result = await pool.query(
-          `INSERT INTO orders (name, address, task, phone, city, service, status)
-           VALUES ($1,$2,$3,$4,$5,$6,'waiting_admin') RETURNING id`,
-          [safeName, safeAddress, safeTask, cleanPhone, safeCity, sanitize(service) || safeTask]
-        );
-        const orderId = result.rows[0].id;
-        try {
-          await sendTG(ADMIN_ID,
-            `🔔 <b>НОВАЯ ЗАЯВКА №${orderId} С САЙТА</b>\n\n` +
-            `👤 ${safeName}\n📍 ${safeCity}, ${safeAddress}\n🔧 ${safeTask}\n📞 ${cleanPhone}`,
-            { inline_keyboard: [[
-              { text: '✅ ОДОБРИТЬ', callback_data: `approve:${orderId}` },
-              { text: '❌ ОТКЛОНИТЬ', callback_data: `reject:${orderId}` }
-            ]] }
-          );
-        } catch (e) { console.error('Admin notify error:', e.message); }
-        return res.status(200).json({ success: true, orderId });
+        return res.status(200).json({ success: true, orderId: created.id, delivery });
       }
+
+      // ── Заявка от заказчика (сайт, открытый доступ) ──
+      if (!task || !sanitize(task)) return res.status(400).json({ error: 'Опишите задачу' });
+      if (!isValidPhone(phone))     return res.status(400).json({ error: 'Введите корректный номер телефона' });
+      if (!address || !sanitize(address)) return res.status(400).json({ error: 'Укажите адрес' });
+
+      const cleanPhone = normalizePhone(phone);
+      if (!checkRateLimit('phone:' + cleanPhone, 3)) {
+        return res.status(429).json({ error: 'Слишком много заявок. Попробуйте через час.' });
+      }
+
+      const safeName = sanitize(name);
+      const safeTask = sanitize(task);
+      const safeAddress = sanitize(address);
+      const safeCity = sanitize(city) || 'Октябрьский';
+      const src = normalizeSource(source);
+      const srcDetail = sanitize(source_detail) || (ref ? `ref:${sanitize(ref)}` : '');
+
+      const cityId = await resolveCityId(safeCity);
+      const clientId = await upsertClient({
+        phone: cleanPhone, name: safeName, city: safeCity, source: src, sourceDetail: srcDetail
+      });
+
+      const created = await queryOne(
+        `INSERT INTO orders (name, address, task, service, phone, city, city_id, client_id,
+                             source, source_detail, referral_code, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'waiting_admin') RETURNING *`,
+        [safeName, safeAddress, safeTask, sanitize(service) || safeTask, cleanPhone,
+         safeCity, cityId, clientId, src, srcDetail, sanitize(ref)]
+      );
+
+      await logOrderEvent(created.id, 'created', cleanPhone, 'client', `источник: ${src}`);
+
+      const adminId = String(process.env.ADMIN_ID || '').split(',')[0].trim();
+      if (adminId) {
+        await sendTelegram(adminId,
+          `🔔 <b>НОВАЯ ЗАЯВКА №${created.id} С САЙТА</b>\n\n` +
+          `👤 ${safeName || 'без имени'}\n` +
+          `📍 ${safeCity}, ${safeAddress}\n` +
+          `🔧 ${safeTask}\n` +
+          `📞 ${cleanPhone}\n` +
+          `📊 Источник: ${src}${srcDetail ? ` (${srcDetail})` : ''}`,
+          {
+            keyboard: { inline_keyboard: [[
+              { text: '✅ ОДОБРИТЬ', callback_data: `approve:${created.id}` },
+              { text: '❌ ОТКЛОНИТЬ', callback_data: `reject:${created.id}` }
+            ]] },
+            orderId: created.id,
+            type: 'new_order',
+            role: 'admin'
+          });
+      }
+
+      return res.status(200).json({ success: true, orderId: created.id });
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Метод не поддерживается' });
   } catch (err) {
-    console.error('Order API error:', err);
-    return res.status(500).json({ error: err.message });
+    console.error('[order] ошибка:', err);
+    return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 }

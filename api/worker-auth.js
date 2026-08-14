@@ -1,112 +1,155 @@
-import pg from 'pg';
-const { Pool } = pg;
+// Вход рабочего. Раньше: общий ПИН, который лежал в открытом HTML.
+// Теперь: личность подтверждает подпись Telegram, а ПИН — только код приглашения при первой регистрации,
+// и сверяется он на сервере.
+import { query, queryOne } from './_db.js';
+import { authenticate, denyResponse } from './_auth.js';
+import { sendTelegram } from './_notify.js';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
-
-const WORKER_PIN = process.env.WORKER_PIN || '2026';
-
-async function initDB() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS workers (
-      id TEXT PRIMARY KEY,
-      name TEXT,
-      telegram_username TEXT DEFAULT '',
-      stars INTEGER DEFAULT 0,
-      total_orders INTEGER DEFAULT 0,
-      total_earnings INTEGER DEFAULT 0,
-      bank_details TEXT DEFAULT '',
-      level TEXT DEFAULT 'Новобранец',
-      created_at TIMESTAMP DEFAULT NOW()
-    );
-  `);
-  // Миграция: добавляем telegram_username если нет
-  const cols = await pool.query(`
-    SELECT column_name FROM information_schema.columns WHERE table_name = 'workers'
-  `);
-  const existing = cols.rows.map(r => r.column_name);
-  if (!existing.includes('telegram_username')) {
-    await pool.query(`ALTER TABLE workers ADD COLUMN telegram_username TEXT DEFAULT ''`);
-  }
-  if (!existing.includes('stars')) {
-    await pool.query(`ALTER TABLE workers ADD COLUMN stars INTEGER DEFAULT 0`);
-  }
-}
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET || '';
+const ALLOWED_ORIGINS = [
+  'https://mini-appsvsh.vercel.app',
+  'https://goodfipi-dotcom.github.io',
+  'http://localhost:3000'
+];
 
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = ['https://mini-appsvsh.vercel.app'];
-  res.setHeader('Access-Control-Allow-Origin', allowed.includes(origin) ? origin : allowed[0]);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Secret');
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Telegram-Init-Data, X-Admin-Secret');
+  res.setHeader('Vary', 'Origin');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    await initDB();
-
-    // GET — список рабочих (лидерборд)
+    // ── Рейтинг: открытый список, без телефонов и реквизитов ──
     if (req.method === 'GET') {
-      const result = await pool.query(
-        'SELECT id, name, telegram_username, stars, total_orders, total_earnings, created_at FROM workers ORDER BY stars DESC, total_orders DESC LIMIT 50'
+      const { rows } = await query(
+        `SELECT id, name, telegram_username, stars, total_orders, total_earnings, status, created_at
+           FROM workers
+          WHERE active = TRUE
+          ORDER BY stars DESC, total_orders DESC
+          LIMIT 50`
       );
-      return res.status(200).json(result.rows);
+      return res.status(200).json(rows);
     }
 
-    // DELETE — удалить рабочего (только админ)
-    if (req.method === 'DELETE') {
-      const secret = req.headers['x-admin-secret'] || '';
-      if (ADMIN_SECRET && secret !== ADMIN_SECRET) {
-        return res.status(403).json({ error: 'Forbidden' });
-      }
-      const { id } = req.query;
-      if (!id) return res.status(400).json({ error: 'Missing worker id' });
-      await pool.query('DELETE FROM workers WHERE id = $1', [id]);
-      return res.status(200).json({ success: true, ok: true, deleted: id });
-    }
-
-    // POST — вход / регистрация
+    // ── Вход в приложение ──
     if (req.method === 'POST') {
-      const { password, telegram_id, first_name, telegram_username } = req.body;
+      const auth = await authenticate(req);
+      if (!auth.ok) return denyResponse(res, auth);
 
-      if (password !== WORKER_PIN) {
-        return res.status(403).json({ error: 'Wrong PIN' });
-      }
+      const { telegramId, user, isAdmin } = auth;
+      const firstName = user.first_name || 'Рабочий';
+      const username = user.username || '';
 
-      if (!telegram_id) {
-        return res.status(400).json({ error: 'Missing telegram_id' });
-      }
+      let worker = auth.worker;
 
-      const wid = String(telegram_id);
-      const existing = await pool.query('SELECT * FROM workers WHERE id = $1', [wid]);
-
-      if (existing.rows.length > 0) {
-        // Обновляем имя и username при каждом входе
-        if (first_name || telegram_username) {
-          await pool.query(
-            'UPDATE workers SET name = COALESCE(NULLIF($1, \'\'), name), telegram_username = COALESCE(NULLIF($2, \'\'), telegram_username) WHERE id = $3',
-            [first_name || '', telegram_username || '', wid]
-          );
+      // Уже в системе
+      if (worker) {
+        if (worker.active === false) {
+          return res.status(403).json({ error: 'access_revoked', message: 'Доступ отключён. Обратитесь к диспетчеру' });
         }
-        const updated = await pool.query('SELECT * FROM workers WHERE id = $1', [wid]);
-        return res.status(200).json({ ok: true, worker: updated.rows[0] });
+        await query(
+          `UPDATE workers
+              SET name = COALESCE(NULLIF($2,''), name),
+                  telegram_username = COALESCE(NULLIF($3,''), telegram_username),
+                  last_seen = NOW()
+            WHERE id = $1`,
+          [telegramId, firstName, username]
+        );
+        worker = await queryOne('SELECT * FROM workers WHERE id = $1', [telegramId]);
+        return res.status(200).json({ ok: true, worker, isAdmin });
       }
 
-      // Новый рабочий
-      await pool.query(
-        'INSERT INTO workers (id, name, telegram_username, stars, total_orders) VALUES ($1, $2, $3, 0, 0)',
-        [wid, first_name || 'Рабочий', telegram_username || '']
+      // Новый человек — нужен код приглашения (проверяется на сервере)
+      const invite = String(req.body?.invite_code ?? req.body?.password ?? '');
+      const expected = String(process.env.WORKER_PIN || '');
+
+      if (!expected || invite !== expected) {
+        return res.status(403).json({
+          error: 'bad_invite',
+          message: 'Неверный код приглашения. Запросите его у диспетчера'
+        });
+      }
+
+      await query(
+        `INSERT INTO workers (id, telegram_id, name, telegram_username, stars, total_orders, active, role, status, notify_orders, last_seen)
+         VALUES ($1,$1,$2,$3,0,0,TRUE,'worker','available',TRUE,NOW())
+         ON CONFLICT (id) DO NOTHING`,
+        [telegramId, firstName, username]
       );
-      const newWorker = await pool.query('SELECT * FROM workers WHERE id = $1', [wid]);
-      return res.status(200).json({ ok: true, worker: newWorker.rows[0], isNew: true });
+      worker = await queryOne('SELECT * FROM workers WHERE id = $1', [telegramId]);
+
+      const adminId = String(process.env.ADMIN_ID || '').split(',')[0].trim();
+      if (adminId) {
+        await sendTelegram(adminId,
+          `🆕 <b>Новый рабочий в системе</b>\n\n` +
+          `${firstName}${username ? ` (@${username})` : ''}\nID: ${telegramId}`,
+          { type: 'new_worker', role: 'admin' });
+      }
+
+      return res.status(200).json({ ok: true, worker, isNew: true, isAdmin });
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
+    // ── Управление доступом рабочего (только администратор) ──
+    if (req.method === 'PATCH') {
+      const auth = await authenticate(req, { requireAdmin: true });
+      if (!auth.ok) return denyResponse(res, auth);
+
+      const { id, active, role, city_id, status, notify_orders, phone } = req.body || {};
+      if (!id) return res.status(400).json({ error: 'Не указан рабочий' });
+
+      const fields = [];
+      const values = [];
+      const set = (col, val) => { values.push(val); fields.push(`${col} = $${values.length}`); };
+
+      if (active !== undefined)        set('active', !!active);
+      if (role !== undefined)          set('role', role);
+      if (city_id !== undefined)       set('city_id', city_id);
+      if (status !== undefined)        set('status', status);
+      if (notify_orders !== undefined) set('notify_orders', !!notify_orders);
+      if (phone !== undefined)         set('phone', phone);
+
+      if (!fields.length) return res.status(400).json({ error: 'Нечего обновлять' });
+
+      values.push(String(id));
+      const worker = await queryOne(
+        `UPDATE workers SET ${fields.join(', ')} WHERE id = $${values.length} RETURNING *`,
+        values
+      );
+      if (!worker) return res.status(404).json({ error: 'Рабочий не найден' });
+
+      // Человек должен узнать, что доступ выключили или вернули
+      if (active !== undefined) {
+        await sendTelegram(String(id),
+          active
+            ? '✅ Ваш доступ к заявкам VSH Service включён.'
+            : '⛔️ Ваш доступ к заявкам VSH Service отключён диспетчером.',
+          { type: 'access_change', role: 'worker', alertAdminOnFail: false });
+      }
+
+      return res.status(200).json({ success: true, worker });
+    }
+
+    // ── Отключение рабочего. Запись не удаляем — история заказов должна остаться ──
+    if (req.method === 'DELETE') {
+      const auth = await authenticate(req, { requireAdmin: true });
+      if (!auth.ok) return denyResponse(res, auth);
+
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: 'Не указан рабочий' });
+
+      const worker = await queryOne(
+        `UPDATE workers SET active = FALSE, notify_orders = FALSE WHERE id = $1 RETURNING id, name`,
+        [String(id)]
+      );
+      if (!worker) return res.status(404).json({ error: 'Рабочий не найден' });
+
+      return res.status(200).json({ success: true, ok: true, deactivated: worker.id });
+    }
+
+    return res.status(405).json({ error: 'Метод не поддерживается' });
   } catch (err) {
-    console.error('Worker auth error:', err);
-    return res.status(500).json({ error: err.message });
+    console.error('[worker-auth] ошибка:', err);
+    return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 }
