@@ -641,6 +641,19 @@ const API = 'https://mini-appsvsh.vercel.app';
 let INIT_DATA = tg?.initData || '';
 let isAdminUser = false;
 
+// Вход по персональной ссылке из бота — работает там, где Telegram не отдаёт подпись.
+// Ключ из ссылки одноразовый, дальше живём по сохранённой сессии.
+const SESSION_KEY = 'vsh_session_token';
+function getSession(){ try { return localStorage.getItem(SESSION_KEY) || ''; } catch(e){ return ''; } }
+function setSession(t){ try { if(t) localStorage.setItem(SESSION_KEY, t); } catch(e){} }
+function clearSession(){ try { localStorage.removeItem(SESSION_KEY); } catch(e){} }
+function getLoginTokenFromUrl(){
+  try {
+    const p = new URLSearchParams(location.search);
+    return p.get('t') || p.get('login') || '';
+  } catch(e){ return ''; }
+}
+
 const RANKS = [
   {name:'🔩 Новобранец',icon:'🔩',min:0},{name:'🪛 Подмастерье',icon:'🪛',min:3},
   {name:'🔧 Рабочий',icon:'🔧',min:7},{name:'⚙️ Механик',icon:'⚙️',min:12},
@@ -682,7 +695,8 @@ async function apiCall(method, endpoint, body) {
     headers: {
       'Content-Type': 'application/json',
       // Подпись Telegram — ею сервер проверяет, кто именно обращается
-      'X-Telegram-Init-Data': INIT_DATA
+      'X-Telegram-Init-Data': INIT_DATA,
+      'X-Session-Token': getSession()
     }
   };
   if (body) opts.body = JSON.stringify(body);
@@ -768,46 +782,49 @@ function skipReferralCode() {
 }
 
 function initEntryFlow() {
-  // Telegram иногда отдаёт подпись не сразу после открытия окна — ждём её до 3 секунд
+  // 1) Пришли по персональной ссылке из бота — меняем ключ на постоянную сессию
+  const linkToken = getLoginTokenFromUrl();
+  if (linkToken) {
+    showAuthPage();
+    setAuthStatus('Входим по ссылке…');
+    loginByLink(linkToken);
+    return;
+  }
+
+  // 2) Уже входили раньше — работаем по сохранённой сессии
+  if (getSession()) {
+    tryAutoLogin();
+    return;
+  }
+
+  // 3) Открыто внутри Telegram — ждём подпись пользователя
   if (!INIT_DATA) {
     showAuthPage();
     setAuthStatus('Открываем…');
     waitForInitData(0);
     return;
   }
+
   tryAutoLogin();
 }
 
-/** Ждём подпись Telegram: она может появиться на несколько сотен миллисекунд позже окна */
-function waitForInitData(attempt) {
-  const fresh = window.Telegram?.WebApp?.initData || '';
-  if (fresh) {
-    INIT_DATA = fresh;
-    tryAutoLogin();
+/** Обмен одноразового ключа из ссылки на постоянную сессию */
+async function loginByLink(token) {
+  const res = await apiCall('POST', '/api/worker-auth', { login_token: token });
+
+  // Ключ убираем из адреса, чтобы он не остался в истории браузера
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+
+  if (res?.ok && res.worker) {
+    setSession(res.session_token);
+    currentWorker = res.worker;
+    isAdminUser = !!res.isAdmin;
+    enterApp();
     return;
   }
-  if (attempt < 12) {
-    setTimeout(() => waitForInitData(attempt + 1), 250);
-    return;
-  }
-  // Подписи так и нет — показываем, что именно видит приложение, чтобы не гадать
-  const w = window.Telegram?.WebApp;
-  setAuthStatus('Telegram не передал данные входа');
-  showAuthError(
-    'Приложение открылось, но Telegram не прислал подпись пользователя. ' +
-    'Попробуйте открыть его на телефоне — или пришлите диспетчеру этот текст:',
-    true
-  );
-  const diag = document.getElementById('auth-diag');
-  if (diag) {
-    diag.textContent =
-      'Telegram: ' + (w ? 'есть' : 'НЕТ') +
-      ' | версия: ' + (w?.version || '—') +
-      ' | платформа: ' + (w?.platform || '—') +
-      ' | подпись: ' + (w?.initData ? w.initData.length + ' символов' : 'пусто') +
-      ' | пользователь: ' + (w?.initDataUnsafe?.user?.id || 'нет');
-    diag.classList.remove('hidden');
-  }
+
+  setAuthStatus('Ссылка не сработала');
+  showAuthError(res?.message || 'Запросите новую ссылку в боте — кнопка «Открыть приложение».', true);
 }
 
 function setAuthStatus(text) {
@@ -836,6 +853,7 @@ async function tryAutoLogin() {
   }
 
   if (res?.ok && res.worker) {
+    setSession(res.session_token);
     currentWorker = res.worker;
     isAdminUser = !!res.isAdmin;
     if (res.isNew) showToast('Добро пожаловать в VSH Service!', 'success');
@@ -861,7 +879,7 @@ function enterApp(){
 }
 
 function logout(){
-  currentWorker=null;
+  currentWorker=null; clearSession();
   // Закрываем Telegram WebApp если доступен
   if(tg&&tg.close){tg.close()}else{document.getElementById('app').classList.add('hidden');document.getElementById('auth-page').classList.remove('hidden')}
 }

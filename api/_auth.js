@@ -73,19 +73,44 @@ function isAdminId(telegramId) {
   return admins.includes(String(telegramId));
 }
 
+/** Сессия, полученная по ссылке из бота — запасной путь для платформ без подписи */
+async function sessionFromToken(req) {
+  const token = String(
+    req.headers['x-session-token'] || req.body?.session_token || req.query?.session_token || ''
+  ).trim();
+  if (!token) return null;
+
+  const row = await queryOne(
+    `UPDATE worker_sessions SET last_seen = NOW()
+      WHERE token = $1 AND expires_at > NOW()
+      RETURNING worker_id`,
+    [token]
+  );
+  return row?.worker_id ? String(row.worker_id) : null;
+}
+
 /**
- * Полная авторизация: подпись + запись рабочего в базе + права.
+ * Полная авторизация. Личность подтверждается либо подписью Telegram,
+ * либо сессией, выданной по персональной ссылке из бота.
  * @returns {{ok:true, telegramId, user, worker, role, isAdmin} | {ok:false, status, error}}
  */
 export async function authenticate(req, { requireWorker = false, requireAdmin = false } = {}) {
   const initData = extractInitData(req);
   const check = verifyInitData(initData);
 
-  if (!check.ok) {
-    return { ok: false, status: 401, error: 'unauthorized', reason: check.reason };
-  }
+  let telegramId;
+  let tgUser = null;
 
-  const telegramId = String(check.user.id);
+  if (check.ok) {
+    telegramId = String(check.user.id);
+    tgUser = check.user;
+  } else {
+    const fromSession = await sessionFromToken(req);
+    if (!fromSession) {
+      return { ok: false, status: 401, error: 'unauthorized', reason: check.reason };
+    }
+    telegramId = fromSession;
+  }
   const isAdmin = isAdminId(telegramId);
 
   const worker = await queryOne(
@@ -111,11 +136,37 @@ export async function authenticate(req, { requireWorker = false, requireAdmin = 
   return {
     ok: true,
     telegramId,
-    user: check.user,
+    user: tgUser,
     worker,
     isAdmin,
     role: isAdmin ? 'admin' : worker?.role || 'guest'
   };
+}
+
+/** Выдаёт долгую сессию — чтобы не запрашивать ссылку при каждом заходе */
+export async function issueSession(telegramId, days = 90) {
+  const token = crypto.randomBytes(32).toString('base64url');
+  await query(
+    `INSERT INTO worker_sessions (token, worker_id, expires_at)
+     VALUES ($1, $2, NOW() + ($3 || ' days')::interval)`,
+    [token, String(telegramId), String(days)]
+  );
+  return token;
+}
+
+/**
+ * Обменивает одноразовый ключ из ссылки на сессию.
+ * Ключ живёт 15 минут и срабатывает один раз.
+ */
+export async function redeemLoginToken(token) {
+  if (!token) return null;
+  const row = await queryOne(
+    `UPDATE login_tokens SET used_at = NOW()
+      WHERE token = $1 AND used_at IS NULL AND expires_at > NOW()
+      RETURNING worker_id`,
+    [String(token).trim()]
+  );
+  return row?.worker_id ? String(row.worker_id) : null;
 }
 
 /** Ответ на неудачную авторизацию — единый формат для всех эндпоинтов */

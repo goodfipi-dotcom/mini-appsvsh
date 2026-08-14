@@ -2,7 +2,7 @@
 // Теперь: личность подтверждает подпись Telegram, а ПИН — только код приглашения при первой регистрации,
 // и сверяется он на сервере.
 import { query, queryOne } from './_db.js';
-import { authenticate, denyResponse } from './_auth.js';
+import { authenticate, denyResponse, issueSession, redeemLoginToken } from './_auth.js';
 import { sendTelegram } from './_notify.js';
 
 const ALLOWED_ORIGINS = [
@@ -34,12 +34,42 @@ export default async function handler(req, res) {
 
     // ── Вход в приложение ──
     if (req.method === 'POST') {
+      // Вход по персональной ссылке из бота — работает там, где Telegram не отдаёт подпись
+      const loginToken = req.body?.login_token;
+      if (loginToken) {
+        const workerId = await redeemLoginToken(loginToken);
+        if (!workerId) {
+          return res.status(403).json({
+            error: 'bad_link',
+            message: 'Ссылка устарела или уже использована. Запросите новую в боте.'
+          });
+        }
+
+        const worker = await queryOne('SELECT * FROM workers WHERE id = $1', [workerId]);
+        if (worker?.active === false) {
+          return res.status(403).json({ error: 'access_revoked', message: 'Доступ отключён диспетчером' });
+        }
+
+        const sessionToken = await issueSession(workerId);
+        const admins = String(process.env.ADMIN_ID || '').split(',').map(s => s.trim());
+
+        await query('UPDATE workers SET last_seen = NOW() WHERE id = $1', [workerId]).catch(() => {});
+
+        return res.status(200).json({
+          ok: true,
+          worker,
+          session_token: sessionToken,
+          isAdmin: admins.includes(String(workerId))
+        });
+      }
+
       const auth = await authenticate(req);
       if (!auth.ok) return denyResponse(res, auth);
 
       const { telegramId, user, isAdmin } = auth;
-      const firstName = user.first_name || 'Рабочий';
-      const username = user.username || '';
+      // при входе по сессии данных Telegram нет — пустая строка сохранит прежнее имя
+      const firstName = user?.first_name || '';
+      const username = user?.username || '';
 
       let worker = auth.worker;
 
@@ -57,7 +87,8 @@ export default async function handler(req, res) {
           [telegramId, firstName, username]
         );
         worker = await queryOne('SELECT * FROM workers WHERE id = $1', [telegramId]);
-        return res.status(200).json({ ok: true, worker, isAdmin });
+        const sessionToken = await issueSession(telegramId);
+        return res.status(200).json({ ok: true, worker, isAdmin, session_token: sessionToken });
       }
 
       // Кода приглашения больше нет: кто открыл приложение из бота — тот и зарегистрирован.
@@ -65,7 +96,7 @@ export default async function handler(req, res) {
       // а телефон заказчика рабочий получает только после того, как принял заявку.
       await query(
         `INSERT INTO workers (id, telegram_id, name, telegram_username, stars, total_orders, active, role, status, notify_orders, last_seen)
-         VALUES ($1,$1,$2,$3,0,0,TRUE,'worker','available',TRUE,NOW())
+         VALUES ($1,$1,COALESCE(NULLIF($2,''),'Рабочий'),$3,0,0,TRUE,'worker','available',TRUE,NOW())
          ON CONFLICT (id) DO NOTHING`,
         [telegramId, firstName, username]
       );
@@ -79,7 +110,8 @@ export default async function handler(req, res) {
           { type: 'new_worker', role: 'admin' });
       }
 
-      return res.status(200).json({ ok: true, worker, isNew: true, isAdmin });
+      const newSession = await issueSession(telegramId);
+      return res.status(200).json({ ok: true, worker, isNew: true, isAdmin, session_token: newSession });
     }
 
     // ── Управление доступом рабочего (только администратор) ──
