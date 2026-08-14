@@ -288,7 +288,8 @@ textarea.input{height:80px;resize:none}
     <div class="auth-logo">VSH<span>.</span></div>
     <div class="auth-sub" id="auth-status">Входим…</div>
     <div class="auth-error" id="auth-error"></div>
-    <button class="btn btn-outline btn-sm hidden" id="auth-retry" style="margin-top:16px" onclick="tryAutoLogin()">Повторить</button>
+    <button class="btn btn-outline btn-sm hidden" id="auth-retry" style="margin-top:16px" onclick="location.reload()">Повторить</button>
+    <div id="auth-diag" class="hidden" style="margin-top:14px;font-size:10px;line-height:1.5;color:var(--muted);word-break:break-all;text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:10px"></div>
   </div>
 </div>
 
@@ -637,7 +638,7 @@ if (tg) { tg.ready(); tg.expand(); }
 const API = 'https://mini-appsvsh.vercel.app';
 // Секретов здесь больше нет: личность подтверждает подпись Telegram (initData),
 // права администратора определяет сервер. Всё, что лежит в этом файле, видит любой посетитель.
-const INIT_DATA = tg?.initData || '';
+let INIT_DATA = tg?.initData || '';
 let isAdminUser = false;
 
 const RANKS = [
@@ -767,14 +768,46 @@ function skipReferralCode() {
 }
 
 function initEntryFlow() {
-  // Вне Telegram подпись не получить — работать нельзя
+  // Telegram иногда отдаёт подпись не сразу после открытия окна — ждём её до 3 секунд
   if (!INIT_DATA) {
     showAuthPage();
-    setAuthStatus('Откройте приложение через бота VSH Service в Telegram');
+    setAuthStatus('Открываем…');
+    waitForInitData(0);
     return;
   }
-  // Никаких кодов и промежуточных экранов — сразу входим
   tryAutoLogin();
+}
+
+/** Ждём подпись Telegram: она может появиться на несколько сотен миллисекунд позже окна */
+function waitForInitData(attempt) {
+  const fresh = window.Telegram?.WebApp?.initData || '';
+  if (fresh) {
+    INIT_DATA = fresh;
+    tryAutoLogin();
+    return;
+  }
+  if (attempt < 12) {
+    setTimeout(() => waitForInitData(attempt + 1), 250);
+    return;
+  }
+  // Подписи так и нет — показываем, что именно видит приложение, чтобы не гадать
+  const w = window.Telegram?.WebApp;
+  setAuthStatus('Telegram не передал данные входа');
+  showAuthError(
+    'Приложение открылось, но Telegram не прислал подпись пользователя. ' +
+    'Попробуйте открыть его на телефоне — или пришлите диспетчеру этот текст:',
+    true
+  );
+  const diag = document.getElementById('auth-diag');
+  if (diag) {
+    diag.textContent =
+      'Telegram: ' + (w ? 'есть' : 'НЕТ') +
+      ' | версия: ' + (w?.version || '—') +
+      ' | платформа: ' + (w?.platform || '—') +
+      ' | подпись: ' + (w?.initData ? w.initData.length + ' символов' : 'пусто') +
+      ' | пользователь: ' + (w?.initDataUnsafe?.user?.id || 'нет');
+    diag.classList.remove('hidden');
+  }
 }
 
 function setAuthStatus(text) {
