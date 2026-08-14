@@ -45,7 +45,19 @@ export default async function handler(req, res) {
           });
         }
 
-        const worker = await queryOne('SELECT * FROM workers WHERE id = $1', [workerId]);
+        let worker = await queryOne('SELECT * FROM workers WHERE id = $1', [workerId]);
+
+        // Человек мог ни разу не открывать приложение — заводим карточку при первом входе
+        if (!worker) {
+          await query(
+            `INSERT INTO workers (id, telegram_id, name, stars, total_orders, active, role, status, notify_orders, last_seen)
+             VALUES ($1,$1,'Рабочий',0,0,TRUE,'worker','available',TRUE,NOW())
+             ON CONFLICT (id) DO NOTHING`,
+            [workerId]
+          );
+          worker = await queryOne('SELECT * FROM workers WHERE id = $1', [workerId]);
+        }
+
         if (worker?.active === false) {
           return res.status(403).json({ error: 'access_revoked', message: 'Доступ отключён диспетчером' });
         }
