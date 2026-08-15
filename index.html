@@ -194,10 +194,20 @@ textarea.input{height:80px;resize:none}
 .elite-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:100px;padding:3px 10px;font-size:10px;font-weight:700;color:#a78bfa}
 .locked-overlay{position:relative}
 .locked-overlay::after{content:'🔒';position:absolute;inset:0;background:rgba(6,8,16,.7);backdrop-filter:blur(4px);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px}
-.tier-tab{flex:1;padding:10px 6px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;text-align:center;transition:all .2s}
-.tier-tab.active{background:rgba(56,189,248,.12);border-color:var(--accent);color:var(--accent)}
-.tier-tab.gold.active{background:rgba(245,158,11,.12);border-color:var(--gold);color:var(--gold)}
-.tier-tab.elite.active{background:rgba(139,92,246,.12);border-color:#a78bfa;color:#a78bfa}
+
+
+/* Экран ожидания: серые карточки с бегущим бликом — видно, что заявки грузятся */
+.skel-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
+.skel-line{height:12px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.11) 37%,rgba(255,255,255,.05) 63%);background-size:400% 100%;animation:skel 1.4s ease infinite}
+.skel-line + .skel-line{margin-top:9px}
+@keyframes skel{0%{background-position:100% 50%}100%{background-position:0 50%}}
+@media (prefers-reduced-motion:reduce){.skel-line{animation:none}}
+
+/* Карточка заявки */
+.order-pay{display:flex;align-items:baseline;gap:6px;margin:12px 0 10px;padding:10px 12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.22);border-radius:12px}
+.order-pay-sum{font-size:19px;font-weight:800;color:#4ade80;font-variant-numeric:tabular-nums}
+.order-pay-label{font-size:11px;color:var(--muted)}
+.order-num{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 
 /* WORKER PROFILE CARD */
 .wp-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;cursor:pointer;transition:all .2s}
@@ -316,23 +326,7 @@ textarea.input{height:80px;resize:none}
           Обновить
         </button>
       </div>
-      <!-- Вкладки уровней заявок -->
-      <div style="display:flex;gap:6px;margin-bottom:14px">
-        <div class="tier-tab active" onclick="switchOrderTier(this,'all')">📋 Все</div>
-        <div class="tier-tab gold" onclick="switchOrderTier(this,'gold')">🏆 Золотые</div>
-        <div class="tier-tab elite" onclick="switchOrderTier(this,'elite')">💎 Элитные</div>
-      </div>
       <div id="orders-list"></div>
-      <div id="gold-locked-msg" class="hidden" style="text-align:center;padding:32px 0">
-        <div style="font-size:36px;margin-bottom:8px">🔒</div>
-        <div style="font-size:14px;font-weight:700;color:var(--muted)">Доступ от звания Бригадир (35⭐)</div>
-        <div style="font-size:12px;color:var(--muted);opacity:.6;margin-top:4px">Выполняйте заявки и растите в рейтинге</div>
-      </div>
-      <div id="elite-locked-msg" class="hidden" style="text-align:center;padding:32px 0">
-        <div style="font-size:36px;margin-bottom:8px">💎</div>
-        <div style="font-size:14px;font-weight:700;color:#a78bfa">Элитные заявки — скоро</div>
-        <div style="font-size:12px;color:var(--muted);opacity:.6;margin-top:4px">Подписка VSH PRO откроется в ближайшее время</div>
-      </div>
     </div>
   </div>
 
@@ -493,33 +487,7 @@ textarea.input{height:80px;resize:none}
   </nav>
 </div>
 
-<!-- GOLD ORDERS PAGE -->
-<div id="gold-page" class="page hidden">
-  <div class="app-header"><div class="header-logo">VSH<span>.</span></div><div style="font-size:11px;color:var(--gold);font-weight:700;letter-spacing:1px">🏆 ЗОЛОТЫЕ ЗАЯВКИ</div></div>
-  <div style="padding:0 16px">
-    <div class="card" style="background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(245,158,11,.02));border-color:rgba(245,158,11,.2)">
-      <div class="section-title" style="color:var(--gold)">🏆 Золотые заявки</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Доступны рабочим от звания <b style="color:var(--gold)">👷 Бригадир (35⭐)</b>. Лучшие заказы с повышенной оплатой.</p>
-      <div id="gold-orders-list"></div>
-    </div>
-  </div>
-</div>
 
-<!-- ELITE ORDERS PAGE (заготовка — будущая подписка) -->
-<div id="elite-page" class="page hidden">
-  <div class="app-header"><div class="header-logo">VSH<span>.</span></div><div style="font-size:11px;color:#a78bfa;font-weight:700;letter-spacing:1px">💎 ЭЛИТНЫЕ ЗАЯВКИ</div></div>
-  <div style="padding:0 16px">
-    <div class="card" style="background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(139,92,246,.02));border-color:rgba(139,92,246,.2)">
-      <div class="section-title" style="color:#a78bfa">💎 Элитные заявки</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Самые прибыльные заказы для настоящих профессионалов.</p>
-      <div style="text-align:center;padding:32px 0">
-        <div style="font-size:48px;margin-bottom:12px;opacity:.4">🔒</div>
-        <div style="font-size:15px;font-weight:700;color:var(--muted);margin-bottom:6px">Скоро открытие</div>
-        <div style="font-size:13px;color:var(--muted);opacity:.6">Элитные заявки откроются для подписчиков VSH PRO</div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- MODAL: RULES -->
 <div id="modal-rules" class="modal-overlay hidden">
@@ -895,71 +863,79 @@ function updateHeaderUI(){if(!currentWorker)return;const rank=getRank(currentWor
 
 // TABS
 function switchTab(tab){
-  ['feed','profile','leaderboard','admin','gold','elite'].forEach(t=>{document.getElementById(t+'-page')?.classList.add('hidden');document.getElementById('nav-'+t)?.classList.remove('active')});
+  ['feed','profile','leaderboard','admin'].forEach(t=>{document.getElementById(t+'-page')?.classList.add('hidden');document.getElementById('nav-'+t)?.classList.remove('active')});
   document.getElementById(tab+'-page')?.classList.remove('hidden');document.getElementById('nav-'+tab)?.classList.add('active');
   if(tab==='profile')loadProfile();if(tab==='leaderboard')loadLeaderboard();if(tab==='admin'){loadAdminWorkers();loadAdminOrders()}
 
 }
 
-// Переключатель уровня заявок
-let currentOrderTier = 'all';
-function switchOrderTier(el, tier) {
-  document.querySelectorAll('.tier-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  currentOrderTier = tier;
-
-  const ordersList = document.getElementById('orders-list');
-  const goldMsg = document.getElementById('gold-locked-msg');
-  const eliteMsg = document.getElementById('elite-locked-msg');
-  goldMsg.classList.add('hidden'); eliteMsg.classList.add('hidden'); ordersList.classList.remove('hidden');
-
-  if (tier === 'gold') {
-    const stars = currentWorker?.stars || 0;
-    if (stars < 35) { ordersList.classList.add('hidden'); goldMsg.classList.remove('hidden'); return; }
-    loadOrders('gold');
-  } else if (tier === 'elite') {
-    ordersList.classList.add('hidden'); eliteMsg.classList.remove('hidden');
-  } else {
-    loadOrders();
-  }
-}
 
 // ORDERS (feed)
+
+/** Экран ожидания: показываем каркас карточек, пока идут данные */
+function showOrdersSkeleton(list){
+  list.innerHTML = Array.from({length:3}).map(() =>
+    '<div class="skel-card">'
+    + '<div class="skel-line" style="width:38%"></div>'
+    + '<div class="skel-line" style="width:72%;height:16px"></div>'
+    + '<div class="skel-line" style="width:55%"></div>'
+    + '<div class="skel-line" style="width:100%;height:38px;margin-top:14px"></div>'
+    + '</div>').join('');
+}
+
 async function loadOrders(){
-  const list=document.getElementById('orders-list');
-  list.innerHTML='<div style="text-align:center;padding:48px 0"><div class="splash-loader" style="margin:0 auto 12px"></div><div style="font-size:13px;color:var(--muted)">Загружаем заявки...</div></div>';
-  const data=await apiCall('GET','/api/order?status=published');
-  if(!data||data.error||!data.length){
-    list.innerHTML='<div class="empty-state"><div class="empty-icon">☕</div><div class="empty-title">Заявок пока нет</div><div class="empty-sub">Уведомим в Telegram когда появится работа</div></div>';
-    document.getElementById('orders-badge').classList.add('hidden');return;
+  const list = document.getElementById('orders-list');
+  showOrdersSkeleton(list);
+
+  const data = await apiCall('GET','/api/order?status=published');
+  const badge = document.getElementById('orders-badge');
+
+  if (data && data.error) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div>'
+      + '<div class="empty-title">Не удалось загрузить заявки</div>'
+      + '<div class="empty-sub">Проверьте интернет и обновите</div></div>';
+    badge.classList.add('hidden');
+    return;
   }
-  const badge=document.getElementById('orders-badge');badge.textContent=data.length;badge.classList.remove('hidden');
-  list.innerHTML='';
-  data.forEach((order,i)=>{
-    const urgent=(i===0);const div=document.createElement('div');
-    div.className='order-card'+(urgent?' urgent':'');div.style.animationDelay=(i*0.07)+'s';
 
-    // Определяем категорию из service
-    const svc = (order.service||order.task||'').toLowerCase();
-    let catClass = 'cat-gruz', catLabel = '🟢 ГРУЗЧИКИ';
-    if (svc.includes('разнорабоч') || svc.includes('копк') || svc.includes('фундамент') || svc.includes('участок') || svc.includes('стройк')) {
-      catClass = 'cat-razn'; catLabel = '🔵 РАЗНОРАБОЧИЕ';
-    } else if (svc.includes('мастер') || svc.includes('сантех') || svc.includes('электр') || svc.includes('ремонт') || svc.includes('мебел')) {
-      catClass = 'cat-mast'; catLabel = '🟡 МАСТЕР НА ЧАС';
-    }
+  if (!data || !data.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">☕</div>'
+      + '<div class="empty-title">Свободных заявок нет</div>'
+      + '<div class="empty-sub">Как появится работа — пришлём уведомление в Telegram</div></div>';
+    badge.classList.add('hidden');
+    return;
+  }
 
-    div.innerHTML=
+  badge.textContent = data.length;
+  badge.classList.remove('hidden');
+  list.innerHTML = '';
+
+  data.forEach((order, i) => {
+    const div = document.createElement('div');
+    div.className = 'order-card';
+    div.style.animationDelay = (i * 0.05) + 's';
+
+    const pay = Number(order.worker_price) || 0;
+    const people = Number(order.workers_needed) || 1;
+
+    div.innerHTML =
       '<div class="order-top"><div>'
-      +'<div class="order-category '+catClass+'">'+catLabel+'</div>'
-      +'<div class="order-city'+(urgent?' urgent-tag':'')+'">'+(urgent?'🔥 СРОЧНАЯ':escapeHtml(order.city||'Октябрьский'))+'</div>'
-      +'<div class="order-title">'+escapeHtml(order.service||order.task||'Задача')+'</div></div>'
-      +'<div class="order-time">'+timeAgo(order.created_at)+'</div></div>'
-      +'<div class="order-meta"><div class="meta-tag">📍 '+escapeHtml(order.address||'—')+'</div>'
-      +'<div class="meta-tag">👷 '+(order.workers_needed||1)+' чел.</div>'
-      +(order.comment?'<div class="meta-tag">💬 '+escapeHtml(order.comment.slice(0,30))+(order.comment.length>30?'...':'')+'</div>':'')+'</div>'
-      +'<div class="order-phone-lock">🔒 Контакт заказчика откроется после принятия</div>'
-      +'<button class="btn btn-primary" data-oid="'+order.id+'">✅ Принять заявку</button>';
-    div.querySelector('button').addEventListener('click',()=>openOrderModal(order));
+      + '<div class="order-num">Заявка №' + order.id + '</div>'
+      + '<div class="order-title">' + escapeHtml(order.service || order.task || 'Задача') + '</div>'
+      + '</div><div class="order-time">' + timeAgo(order.created_at) + '</div></div>'
+      + (pay
+          ? '<div class="order-pay"><span class="order-pay-sum">' + pay.toLocaleString('ru-RU') + ' ₽</span>'
+            + '<span class="order-pay-label">на руки за заявку</span></div>'
+          : '<div class="order-pay"><span class="order-pay-sum" style="color:var(--muted);font-size:15px">Оплата по договорённости</span></div>')
+      + '<div class="order-meta">'
+      + '<div class="meta-tag">📍 ' + escapeHtml(order.city || 'Октябрьский') + ', ' + escapeHtml(order.address || '—') + '</div>'
+      + '<div class="meta-tag">👷 нужно ' + people + ' чел.</div>'
+      + (order.comment ? '<div class="meta-tag">💬 ' + escapeHtml(String(order.comment).slice(0,40)) + (String(order.comment).length > 40 ? '…' : '') + '</div>' : '')
+      + '</div>'
+      + '<div class="order-phone-lock">🔒 Телефон заказчика откроется после принятия</div>'
+      + '<button class="btn btn-primary" data-oid="' + order.id + '">Принять заявку</button>';
+
+    div.querySelector('button').addEventListener('click', () => openOrderModal(order));
     list.appendChild(div);
   });
 }

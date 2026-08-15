@@ -212,12 +212,35 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const body = req.body || {};
 
-      // ── Рабочий принимает заявку (атомарно, личность из подписи Telegram) ──
+      // ── Рабочий принимает заявку (атомарно) ──
       if (body.action === 'accept_order') {
-        const auth = await authenticate(req, { requireWorker: true });
-        if (!auth.ok) return denyResponse(res, auth);
+        let workerId;
+        let workerRecord = null;
 
-        const workerId = auth.telegramId; // берём из подписи, а не из тела — иначе можно принять за другого
+        // Бот принимает заявку от имени рабочего, нажавшего кнопку в Telegram.
+        // Ключ бота хранится на сервере, поэтому подменить рабочего снаружи нельзя.
+        const serverKey = process.env.ADMIN_SECRET || '';
+        const providedKey = req.headers['x-admin-secret'] || '';
+        const fromBot = serverKey && providedKey === serverKey && body.worker_id;
+
+        if (fromBot) {
+          workerId = String(body.worker_id);
+          workerRecord = await queryOne(
+            `SELECT id, name, active FROM workers WHERE id = $1`, [workerId]
+          );
+          if (!workerRecord) {
+            return res.status(403).json({ error: 'not_registered', message: 'Рабочий не найден' });
+          }
+          if (workerRecord.active === false) {
+            return res.status(403).json({ error: 'access_revoked', message: 'Доступ отключён диспетчером' });
+          }
+        } else {
+          const auth = await authenticate(req, { requireWorker: true });
+          if (!auth.ok) return denyResponse(res, auth);
+          workerId = auth.telegramId; // из подписи, а не из тела — иначе можно принять за другого
+          workerRecord = auth.worker;
+        }
+
         const { order_id } = body;
         if (!order_id) return res.status(400).json({ error: 'Не указан номер заявки' });
 
@@ -239,7 +262,7 @@ export default async function handler(req, res) {
         await query(`UPDATE workers SET status = 'busy' WHERE id = $1`, [workerId]).catch(() => {});
         await logOrderEvent(order.id, 'accepted', workerId, 'worker');
 
-        const workerName = auth.worker?.name || auth.user?.first_name || workerId;
+        const workerName = workerRecord?.name || workerId;
         const adminId = String(process.env.ADMIN_ID || '').split(',')[0].trim();
         if (adminId) {
           await sendTelegram(adminId,
